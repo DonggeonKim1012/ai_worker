@@ -532,3 +532,13 @@ doc/
 ## GurumDDS
 *.ar
 
+
+# Local task initial poses and camera profiles
+ffw_bringup/config/ffw_sh5_rev1_follower/ffw_sh5_follower_initial_positions_Task_*.yaml
+ffw_bringup/config/ffw_sh5_rev1_follower/Task_*_initial_pose_provenance.json
+ffw_bringup/config/ffw_sh5_rev1_follower/Task_*_capture.json
+ffw_bringup/config/ffw_sh5_rev1_follower/ffw_sh5_follower_initial_positions_recovered.yaml
+ffw_bringup/config/ffw_bg2_rev4_follower/ffw_bg2_follower_initial_positions_recovered.yaml
+ffw_bringup/config/ffw_sg2_rev1_follower/ffw_sg2_follower_initial_positions_recovered.yaml
+ffw_bringup/config/common/zedm_task*.yaml
+ffw_bringup/config/common/zedm_recovered.yaml

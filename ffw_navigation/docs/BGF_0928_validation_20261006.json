@@ -1,0 +1,92 @@
+{
+  "isolated_nav2": {
+    "ros_domain": 91,
+    "rmw": "rmw_fastrtps_cpp",
+    "states": {
+      "planner_server": "active",
+      "bt_navigator": "active",
+      "behavior_server": "active",
+      "amcl": "active",
+      "collision_monitor": "active",
+      "controller_server": "active",
+      "velocity_smoother": "active"
+    },
+    "controller_parameters": {
+      "OmniController.plugin": "nav2_mppi_controller::MPPIController",
+      "OmniController.motion_model": "Omni",
+      "OmniController.iteration_count": 4,
+      "CurveController.plugin": "nav2_mppi_controller::MPPIController",
+      "CurveController.motion_model": "Omni",
+      "CurveController.vy_max": 0.25,
+      "general_goal_checker.xy_goal_tolerance": 0.025,
+      "general_goal_checker.yaw_goal_tolerance": 0.02,
+      "progress_checker.plugin": "nav2_controller::PoseProgressChecker",
+      "OmniController.vy_min": null
+    },
+    "planner_parameters": {
+      "SmacPlannerHybrid.plugin": "nav2_smac_planner::SmacPlannerHybrid",
+      "SmacPlannerHybrid.tolerance": 0.0,
+      "SmacPlannerHybrid.motion_model_for_search": "REEDS_SHEPP",
+      "SmacPlannerHybrid.angle_quantization_bins": 24,
+      "SmacPlannerHybrid.allow_reverse": null,
+      "SmacPlannerHybrid.cost_travel_multiplier": null,
+      "SmacPlannerHybrid.cost_heuristic_multiplier": null,
+      "SmacPlannerHybrid.rotation_penalty": null,
+      "SmacPlannerHybrid.use_final_approach_orientation": null
+    },
+    "navigator_parameters": {
+      "plugin_lib_names": [
+        "is_path_length_under_plugin"
+      ],
+      "default_nav_to_pose_bt_xml": "/root/ros2_ws/install/ffw_navigation/share/ffw_navigation/config/bt/nav_modes_1109.xml",
+      "default_nav_through_poses_bt_xml": "/root/ros2_ws/install/ffw_navigation/share/ffw_navigation/config/bt/nav_modes_1109.xml"
+    },
+    "motion_goals_sent": 0
+  },
+  "live_base": {
+    "parameter_names": [
+      "steering_alignment_angle_error_threshold",
+      "steering_alignment_start_angle_error_threshold"
+    ],
+    "before_values": [
+      0.35,
+      0.1
+    ],
+    "after_values": [
+      1.0,
+      0.01
+    ],
+    "controllers_before": {
+      "swerve_drive_controller": "active",
+      "effort_r_controller": "active",
+      "pressure_l_broadcaster": "active",
+      "effort_l_controller": "active",
+      "hand_r_controller": "active",
+      "head_controller": "active",
+      "arm_r_controller": "active",
+      "pressure_r_broadcaster": "active",
+      "arm_l_controller": "active",
+      "lift_controller": "active",
+      "ffw_joint_state_broadcaster": "active",
+      "hand_l_controller": "active",
+      "joint_state_broadcaster": "active"
+    },
+    "controllers_after": {
+      "swerve_drive_controller": "active",
+      "effort_r_controller": "active",
+      "pressure_l_broadcaster": "active",
+      "effort_l_controller": "active",
+      "hand_r_controller": "active",
+      "head_controller": "active",
+      "arm_r_controller": "active",
+      "pressure_r_broadcaster": "active",
+      "arm_l_controller": "active",
+      "lift_controller": "active",
+      "ffw_joint_state_broadcaster": "active",
+      "hand_l_controller": "active",
+      "joint_state_broadcaster": "active"
+    },
+    "stationary_samples": 100,
+    "maximum_observed_velocity_component": 0.004203265897440991
+  }
+}

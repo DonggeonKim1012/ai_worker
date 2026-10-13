@@ -1,0 +1,5 @@
+# Use with docker-compose.yml when recreating ai_worker from the local image.
+services:
+  ai_worker:
+    image: robotis/ai-worker:navigation-local
+    pull_policy: never

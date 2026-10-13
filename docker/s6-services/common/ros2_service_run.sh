@@ -51,7 +51,7 @@ fi
 
 # If launch args file exists, append to command (format: key:=value key:=value)
 LAUNCH_ARGS_FILE="/run/launch_args/${SERVICE_NAME}"
-if [ -f "${LAUNCH_ARGS_FILE}" ]; then
+if [ "${APPEND_LAUNCH_ARGS:-true}" = "true" ] && [ -f "${LAUNCH_ARGS_FILE}" ]; then
     LAUNCH_ARGS=$(cat "${LAUNCH_ARGS_FILE}")
     ROS2_CMD="${ROS2_CMD} ${LAUNCH_ARGS}"
     echo "[${SERVICE_NAME}] Launch args: ${LAUNCH_ARGS}"

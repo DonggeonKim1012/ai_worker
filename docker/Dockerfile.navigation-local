@@ -1,0 +1,14 @@
+FROM robotis/ai-worker:latest
+
+# Keep the installed ROS workspace and SH5 runtime from the current image.
+# The compose bind mount supplies local ai_worker source at runtime.
+COPY s6-services/ai_worker_navigation/ /etc/s6-overlay/s6-rc.d/ai_worker_navigation/
+COPY s6-services/ai_worker_navigation-log/ /etc/s6-overlay/s6-rc.d/ai_worker_navigation-log/
+
+RUN chmod +x \
+      /etc/s6-overlay/s6-rc.d/ai_worker_navigation/run \
+      /etc/s6-overlay/s6-rc.d/ai_worker_navigation/finish \
+      /etc/s6-overlay/s6-rc.d/ai_worker_navigation-log/run && \
+    mkdir -p /var/log/ai_worker_navigation && \
+    chown nobody:nogroup /var/log/ai_worker_navigation && \
+    chmod 02755 /var/log/ai_worker_navigation
