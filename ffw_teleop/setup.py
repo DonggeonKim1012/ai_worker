@@ -30,6 +30,7 @@ setup(
         'console_scripts': [
             'keyborad_control = ffw_teleop.keyboard_control:main',
             'mobile_teleop = ffw_teleop.mobile_teleop:main',
+            'hand_preset_bridge = ffw_teleop.hand_preset_bridge:main',
         ],
     },
 )

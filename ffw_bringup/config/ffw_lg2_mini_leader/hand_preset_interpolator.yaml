@@ -1,0 +1,349 @@
+hand_preset_interpolator:
+  ros__parameters:
+    # "both" keeps one node responsible for both hands so left/right presets can
+    # change independently while sharing the same mini-leader joint state input.
+    side: both
+    joint_states_topic: /leader/joint_states
+    publish_rate_hz: 30.0
+    time_from_start_sec: 0.05
+
+    left_command_topic: /leader/joint_trajectory_command_broadcaster_left_hand/joint_trajectory
+    right_command_topic: /leader/joint_trajectory_command_broadcaster_right_hand/joint_trajectory
+    left_effort_command_topic: /effort_l_controller/commands
+    right_effort_command_topic: /effort_r_controller/commands
+
+    # HX5-D20 uses XM335 current-based position control. Goal Current is in mA
+    # and the actuator control table caps it at 910 mA. Keep 300 mA while the
+    # trigger is open, then ramp every grasp preset to 600 mA as it closes. Goal
+    # Current is a limit for the internal position loop, not forced current, so
+    # actual current rises only after contact creates position error.
+    effort_command_max_ma: 910.0
+    left_default_effort_command_ma: 300.0
+    right_default_effort_command_ma: 300.0
+    # Current limit continuously asserted while joystick save-pose 5 holds the
+    # exact finger targets from bgf_waypoint1_endpose.json.
+    left_endpose_effort_command_ma: 600.0
+    right_endpose_effort_command_ma: 600.0
+    left_preset_1_effort_command_ma: 600.0
+    right_preset_1_effort_command_ma: 600.0
+    left_preset_2_effort_command_ma: 600.0
+    right_preset_2_effort_command_ma: 600.0
+    left_preset_3_effort_command_ma: 600.0
+    right_preset_3_effort_command_ma: 600.0
+    left_preset_4_effort_command_ma: 600.0
+    right_preset_4_effort_command_ma: 600.0
+    left_preset_5_effort_command_ma: 600.0
+    right_preset_5_effort_command_ma: 600.0
+
+    left_preset_topic: /leader/hand_preset_left
+    right_preset_topic: /leader/hand_preset_right
+    both_preset_topic: /leader/hand_preset_both
+
+    # ai_worker owns the preset contract. External clients (including Cyclo UI)
+    # send only {side, preset_id} through this standard ROS 2 service and render
+    # the transient-local status below; no pose values live in Cyclo Intelligence.
+    preset_service: /leader/hand_preset/set
+    preset_status_topic: /leader/hand_preset/status
+    custom_preset_save_service: /leader/hand_preset/custom/save
+    preset_update_service: /leader/hand_preset/manage/update
+    preset_delete_service: /leader/hand_preset/manage/delete
+    preset_restore_service: /leader/hand_preset/manage/restore
+    preset_delete_undo_sec: 10.0
+    # /workspace is backed by ai_worker/docker/workspace on the robot host.
+    # Runtime-created presets therefore survive container restarts.
+    custom_preset_file: /workspace/hand_presets/custom_hand_presets.yaml
+    custom_preset_id_min: 100
+    # Custom finger curls interpolate each four-joint finger group between the
+    # open pose and this preset's closed pose. Preset 4 is the full-hand grasp.
+    custom_template_preset_id: 4
+    require_trigger_release_on_change: true
+    preset_change_max_trigger_alpha: 0.05
+    # The released leader triggers currently settle around 0.02-0.05 rad. Map
+    # that small mechanical/encoder offset to exactly open so it neither moves
+    # the follower fingers nor blocks preset changes while apparently released.
+    trigger_open_deadband_alpha: 0.08
+    # Readings farther than this beyond the calibrated stroke are logged as
+    # unusual, but still clamp to the nearest endpoint. Pulled over-travel stays
+    # fully closed; only manually returning the trigger commands the open pose.
+    trigger_out_of_range_margin: 0.25
+
+    left_trigger_joint: gripper_l_joint1
+    right_trigger_joint: gripper_r_joint1
+    left_trigger_open: 0.0
+    # Pulling the deployed mini-leader trigger increases its joint position.
+    # Full physical pull is approximately +2.30 rad. Use the complete physical
+    # stroke for normalized travel so the complete pose and current cap are
+    # reached only at the mechanical end stop; pushing in the negative direction
+    # stays clamped at zero grasp command.
+    left_trigger_closed: 2.30
+    right_trigger_open: 0.0
+    right_trigger_closed: 2.30
+
+    left_joint_names:
+      - finger_l_joint1
+      - finger_l_joint2
+      - finger_l_joint3
+      - finger_l_joint4
+      - finger_l_joint5
+      - finger_l_joint6
+      - finger_l_joint7
+      - finger_l_joint8
+      - finger_l_joint9
+      - finger_l_joint10
+      - finger_l_joint11
+      - finger_l_joint12
+      - finger_l_joint13
+      - finger_l_joint14
+      - finger_l_joint15
+      - finger_l_joint16
+      - finger_l_joint17
+      - finger_l_joint18
+      - finger_l_joint19
+      - finger_l_joint20
+    right_joint_names:
+      - finger_r_joint1
+      - finger_r_joint2
+      - finger_r_joint3
+      - finger_r_joint4
+      - finger_r_joint5
+      - finger_r_joint6
+      - finger_r_joint7
+      - finger_r_joint8
+      - finger_r_joint9
+      - finger_r_joint10
+      - finger_r_joint11
+      - finger_r_joint12
+      - finger_r_joint13
+      - finger_r_joint14
+      - finger_r_joint15
+      - finger_r_joint16
+      - finger_r_joint17
+      - finger_r_joint18
+      - finger_r_joint19
+      - finger_r_joint20
+
+    # preset 0 is reserved for "open"; the CLI's "open left/right/both" command
+    # requests this preset id through the service.
+    # Preset 1: thumb-index pinch grasp (available independently on both hands).
+    # Preset 2: thumb-index-middle tripod grasp with ring/little fingers folded.
+    # Preset 3: firm writing tripod for a pencil or calligraphy brush.
+    preset_ids: [0, 1, 2, 3, 4, 5, 6]
+    left_preset_id: 5
+    right_preset_id: 5
+
+    # Human-readable metadata is advertised on /leader/hand_preset/status so
+    # clients can render presets without hard-coding their meaning by ID.
+    preset_0_name: "Open Hand"
+    preset_0_description: "Fully opens the hand to release an object."
+    preset_0_visual: "open"
+    preset_1_name: "Pinch Grasp"
+    preset_1_description: "Thumb and index finger meet to pick up small objects."
+    preset_1_visual: "pinch"
+    preset_2_name: "Three-Finger Grasp"
+    preset_2_description: "Uses thumb, index, and middle fingertips while ring and little fingers stay folded."
+    preset_2_visual: "fingertip"
+    preset_3_name: "Writing Tripod Grasp"
+    preset_3_description: "Firmly holds a pencil or brush with thumb, index, and middle fingers while ring and little fingers stay folded."
+    preset_3_visual: "fingertip"
+    preset_4_name: "Fist Grasp"
+    preset_4_description: "Closes all fingers into the palm for a firm grip."
+    preset_4_visual: "fist"
+    preset_5_name: "Bottle Base Grasp"
+    preset_5_description: "Hooks four fingers around a bottle base while the thumb presses between the middle and ring fingers for a firm tilting grip."
+    preset_5_visual: "fingertip"
+    preset_6_name: "High-Force Squeeze Grasp"
+    preset_6_description: "Concentrates a progressively higher grip current through the thumb, middle, and ring fingers to locally squeeze a flexible water container."
+    preset_6_visual: "fingertip"
+
+    left_open_pose: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+                     0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    right_open_pose: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+                      0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+
+    # Keep the ring/little fingers folded throughout trigger travel. The first
+    # three finger groups start from the fingertip-grasp alignment and close
+    # toward the shared thumb/index/middle contact point.
+    left_duration_sec_2: 0.05
+    right_duration_sec_2: 0.05
+    left_open_pose_2: [
+      0.0, 1.5, 0.0, 0.0,
+      0.0, 0.0, 0.0, 0.0,
+      0.0, 0.0, 0.0, 0.0,
+      -0.2868544073348218, 1.4388739790365248, 1.3545050357028146,
+      1.2854759002479605, -0.21168934872842549, 1.4450099021880671,
+      1.4173982480061253, 1.3284273623087586]
+    right_open_pose_2: [
+      0.0, -1.5, 0.0, 0.0,
+      0.0, 0.0, 0.0, 0.0,
+      0.0, 0.0, 0.0, 0.0,
+      0.23469906054629597, 1.3882526130362987, 1.3468351317633864,
+      1.3023496889147026, 0.14112623248527223, 1.3790487283089847,
+      1.3713788243695566, 1.3391652278239574]
+
+    # Writing pre-shape: the active three fingers leave a wide insertion gap
+    # around the shaft at zero trigger, while ring/little stay tucked away. The
+    # trigger then closes only the tripod around the pencil or brush.
+    left_duration_sec_3: 0.05
+    right_duration_sec_3: 0.05
+    left_open_pose_3: [
+      -0.40, 1.00, -0.15, -0.10,
+      0.28, 0.65, 0.12, 0.30,
+      0.30, 0.60, 0.25, 0.30,
+      -0.2868544073348218, 1.4388739790365248, 1.3545050357028146,
+      1.2854759002479605, -0.21168934872842549, 1.4450099021880671,
+      1.4173982480061253, 1.3284273623087586]
+    right_open_pose_3: [
+      0.40, -1.00, 0.15, 0.10,
+      -0.25, 0.65, 0.12, 0.30,
+      -0.30, 0.60, 0.25, 0.30,
+      0.23469906054629597, 1.3882526130362987, 1.3468351317633864,
+      1.3023496889147026, 0.14112623248527223, 1.3790487283089847,
+      1.3713788243695566, 1.3391652278239574]
+
+    left_duration_sec_4: 0.05
+    right_duration_sec_4: 0.05
+    left_open_pose_4: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+                       0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    right_open_pose_4: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+                        0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+
+    left_duration_sec_5: 0.05
+    right_duration_sec_5: 0.05
+    left_open_pose_5: [0.0, 1.5, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+                       0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    right_open_pose_5: [0.0, -1.5, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+                        0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+
+    # Preset 6 uses a localized three-point squeeze instead of distributing the
+    # load across all four opposing fingers. The thumb presses between the
+    # middle/ring fingertips; index/little stay extended and therefore do not
+    # push the container away or spread the available contact force. The
+    # current cap reaches 600 mA only at full trigger.
+    left_duration_sec_6: 0.05
+    right_duration_sec_6: 0.05
+    left_open_pose_6: [0.0, 1.5, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+                       0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    right_open_pose_6: [0.0, -1.5, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+                        0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    left_preset_6_effort_command_ma: 600.0
+    right_preset_6_effort_command_ma: 600.0
+
+    left_preset_0: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+                    0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    right_preset_0: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+                     0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+
+    # Thumb-index pinch grasp from the ROBOTIS HX5-D20 example motion.
+    # The thumb/index flexion is closed slightly past fingertip contact so the
+    # position-controlled hand maintains a firmer pinch. Left-hand signs are
+    # mirrored for joints 1-5, 9, 13, and 17. The right thumb base alignment
+    # has a small per-hand correction so its pad meets the index pad instead of
+    # passing slightly to the side. The right-hand target follows a nearly
+    # uniform ~1.12x extension of the example motion: it passes through the
+    # original fingerprint-to-fingerprint pose at about 89% trigger travel, then
+    # uses the remaining travel as pressure over-travel. The right index base
+    # includes a +0.09 rad hardware alignment correction so its fingerprint pad,
+    # rather than its side, faces the thumb; the thumb base compensates for the
+    # resulting lateral shift while preserving the contact center.
+    left_preset_1: [
+      -0.62, 1.15, -0.55, -0.42,
+      0.42, 1.32, 0.40, 0.82,
+      0.05, 0.59, 0.30, 0.68,
+      -0.22, 0.77, 0.14, 0.68,
+      -0.36, 0.62, 0.46, 0.67]
+
+    right_preset_1: [
+      0.64, -1.15, 0.50, 0.36,
+      -0.38, 1.33, 0.34, 0.80,
+      -0.05, 0.59, 0.30, 0.68,
+      0.22, 0.77, 0.14, 0.68,
+      0.36, 0.62, 0.46, 0.67]
+
+    # Three-finger tripod grasp: thumb/index/middle use the fingertip target;
+    # ring/little use the full-grasp fold so they remain clear of the object.
+    left_preset_2: [
+      0.0, 1.5, -1.0, 0.0,
+      0.0, 1.5, 0.0, 0.0,
+      0.0, 1.5, 0.0, 0.0,
+      -0.2868544073348218, 1.4388739790365248, 1.3545050357028146,
+      1.2854759002479605, -0.21168934872842549, 1.4450099021880671,
+      1.4173982480061253, 1.3284273623087586]
+
+    right_preset_2: [
+      0.0, -1.5, 1.0, 0.0,
+      0.0, 1.5, 0.0, 0.0,
+      0.0, 1.5, 0.0, 0.0,
+      0.23469906054629597, 1.3882526130362987, 1.3468351317633864,
+      1.3023496889147026, 0.14112623248527223, 1.3790487283089847,
+      1.3713788243695566, 1.3391652278239574]
+
+    # Writing tripod: the calibrated firm thumb/index pinch clamps the shaft;
+    # the adducted and curled middle finger supports it farther down, forming
+    # three non-collinear contacts rather than collapsing all fingertips to one
+    # point. Ring/little retain the full-grasp fold for clearance and stability.
+    left_preset_3: [
+      -0.62, 1.15, -0.55, -0.42,
+      0.42, 1.32, 0.40, 0.82,
+      0.55, 1.05, 0.72, 0.70,
+      -0.2868544073348218, 1.4388739790365248, 1.3545050357028146,
+      1.2854759002479605, -0.21168934872842549, 1.4450099021880671,
+      1.4173982480061253, 1.3284273623087586]
+
+    right_preset_3: [
+      0.64, -1.15, 0.50, 0.36,
+      -0.38, 1.33, 0.34, 0.80,
+      -0.55, 1.05, 0.72, 0.70,
+      0.23469906054629597, 1.3882526130362987, 1.3468351317633864,
+      1.3023496889147026, 0.14112623248527223, 1.3790487283089847,
+      1.3713788243695566, 1.3391652278239574]
+
+    left_preset_4: [
+      -0.9433981845498765, 0.6304661038207917, -0.4203107358808724,
+      -0.47706802503264134, -0.29759227285002154, 0.688757373760446,
+      0.6734175658815897, 1.064582666792428, -0.43258258218395795,
+      1.4189322287940112, 1.3529710549149288, 1.316155516005673,
+      -0.2868544073348218, 1.4388739790365248, 1.3545050357028146,
+      1.2854759002479605, -0.21168934872842549, 1.4450099021880671,
+      1.4173982480061253, 1.3284273623087586]
+
+    right_preset_4: [
+        1.1013982057016838, -0.5783107570330936, 0.41877675509257317,
+        0.5522330836386238, 0.24850488763726686, 0.6427379501238768,
+        0.6258641614571347, 1.1228739367320824, 0.36355344672869006,
+        1.4005244593393833, 1.3299613430966444, 1.2870098810358463,
+        0.23469906054629597, 1.3882526130362987, 1.3468351317633864,
+        1.3023496889147026, 0.14112623248527223, 1.3790487283089847,
+        1.3713788243695566, 1.3391652278239574]
+
+    # Bottle-base power grasp. The thumb fingertip reference is centered between
+    # the middle/ring references (right-hand y ~= -3.9 mm) instead of meeting the
+    # index. All four opposing fingertips finish near the same z plane (~103 mm),
+    # with distributed PIP/DIP flexion that hooks the bottle rim and provides
+    # pressure over-travel once the object stops the fingers.
+    left_preset_5: [
+      -0.64, 1.50, -1.10, -0.22,
+      -0.15, 1.20, 0.63, 0.77,
+      -0.05, 1.31, 0.61, 0.68,
+      0.05, 1.22, 0.64, 0.74,
+      0.15, 0.98, 0.61, 0.88]
+
+    right_preset_5: [
+      0.64, -1.50, 1.10, 0.22,
+      0.15, 1.20, 0.63, 0.77,
+      0.05, 1.31, 0.61, 0.68,
+      -0.05, 1.22, 0.64, 0.74,
+      -0.15, 0.98, 0.61, 0.88]
+
+    left_preset_6: [
+      -0.64, 1.50, -1.10, -0.22,
+      0.0, 0.0, 0.0, 0.0,
+      -0.05, 1.31, 0.61, 0.68,
+      0.05, 1.22, 0.64, 0.74,
+      0.0, 0.0, 0.0, 0.0]
+
+    right_preset_6: [
+      0.64, -1.50, 1.10, 0.22,
+      0.0, 0.0, 0.0, 0.0,
+      0.05, 1.31, 0.61, 0.68,
+      -0.05, 1.22, 0.64, 0.74,
+      0.0, 0.0, 0.0, 0.0]
