@@ -4,4 +4,7 @@
     The joint trajectory command broadcaster publishes the current states from ros2_control system.
   </description>
   </class>
+  <class name="joint_trajectory_command_broadcaster/JointTrajectoryCommandBroadcasterExtended" type="joint_trajectory_command_broadcaster::JointTrajectoryCommandBroadcasterExtended" base_class_type="controller_interface::ControllerInterface">
+    <description>Arm teleoperation with independent enable, saved poses, stamped states, and blending.</description>
+  </class>
 </library>

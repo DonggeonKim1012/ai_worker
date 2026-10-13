@@ -5,4 +5,7 @@
       A controller that reads JOYSTICK X VALUE and JOYSTICK Y VALUE values from hardware interfaces and publishes them.
     </description>
   </class>
+  <class name="joystick_controller/JoystickControllerExtended" type="joystick_controller::JoystickControllerExtended" base_class_type="controller_interface::ControllerInterface">
+    <description>Joystick controller with recovered task gestures, stamped states, and optional randomization.</description>
+  </class>
 </library>

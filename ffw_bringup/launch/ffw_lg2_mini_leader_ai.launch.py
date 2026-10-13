@@ -33,6 +33,11 @@ def generate_launch_description():
             default_value='ffw_lg2_mini_leader.urdf.xacro',
             description='URDF/XACRO file for the robot model.',
         ),
+        DeclareLaunchArgument(
+            'controller_config',
+            default_value='ffw_lg2_mini_leader_ai_hardware_controller.yaml',
+            description='Controller config filename; use the _extended.yaml profile for recovered task controls.',
+        ),
     ]
 
     description_file = LaunchConfiguration('description_file')
@@ -43,7 +48,7 @@ def generate_launch_description():
             FindPackageShare('ffw_bringup'),
             'config',
             'ffw_lg2_mini_leader',
-            'ffw_lg2_mini_leader_ai_hardware_controller.yaml',
+            LaunchConfiguration('controller_config'),
         ]
     )
 
