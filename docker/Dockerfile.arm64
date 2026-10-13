@@ -150,6 +150,13 @@ RUN cd ${COLCON_WS} && \
     rosdep install -i --from-path src --rosdistro $ROS_DISTRO --skip-keys="librealsense2" -y && \
     rm -rf /var/lib/apt/lists/*
 
+RUN apt-get update && apt-get install -y --no-install-recommends nodejs npm && \
+    if [ -f ${COLCON_WS}/src/ai_worker/ffw_calibration/ui/package-lock.json ]; then \
+      cd ${COLCON_WS}/src/ai_worker/ffw_calibration/ui && npm ci && npm run build && \
+      rm -rf node_modules; \
+    fi && \
+    rm -rf /var/lib/apt/lists/*
+
 RUN bash -c "source /opt/ros/${ROS_DISTRO}/setup.bash && \
     cd ${COLCON_WS} && \
     colcon build --symlink-install --cmake-args -DCMAKE_BUILD_TYPE=Release"
