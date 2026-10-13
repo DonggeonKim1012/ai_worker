@@ -64,6 +64,8 @@ setup(
         'console_scripts': [
             'joint_trajectory_executor = ffw_bringup.joint_trajectory_executor:main',
             'head_eef_tracker = ffw_bringup.head_eef_tracker:main',
+            'sh5_bringdown = ffw_bringup.sh5_bringdown:main',
+            'sh5_final_pose = ffw_bringup.sh5_bringdown:main',
         ],
     },
 )
