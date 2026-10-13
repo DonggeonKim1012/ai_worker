@@ -469,7 +469,9 @@ controller_interface::return_type JoystickController::update(
     }
 
     // Publish joint trajectory
-    if (!current_joint_states_.name.empty() && !controlled_joints.empty()) {
+    if (!params_.final_pose_gesture_enabled && !current_joint_states_.name.empty() &&
+      !controlled_joints.empty())
+    {
       std::vector<double> positions;
 
       if (swerve_mode || any_sensorxel_joy_active) {
@@ -491,7 +493,11 @@ controller_interface::return_type JoystickController::update(
   }
 
   // Publish cmd_vel
-  publish_cmd_vel(swerve_mode, joystick_values);
+  if (params_.final_pose_gesture_enabled) {
+    publish_cmd_vel(false, joystick_values);
+  } else {
+    publish_cmd_vel(swerve_mode, joystick_values);
+  }
 
   // Publish joystick values
   publish_joystick_values();

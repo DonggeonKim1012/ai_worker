@@ -1,0 +1,14 @@
+/**:
+  sh5_final_pose:
+    ros__parameters:
+      left_axis_index: 1
+      right_axis_index: 4
+      left_axis_sign: 1.0
+      right_axis_sign: 1.0
+      gesture_threshold: 0.7
+      neutral_threshold: 0.2
+      gesture_hold_sec: 0.3
+      hand_confirm_timeout: 60.0
+      arm_confirm_timeout: 20.0
+      max_joint_speed: 0.25
+      hand_effort_ma: 600.0

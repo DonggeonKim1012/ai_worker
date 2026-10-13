@@ -1,0 +1,126 @@
+{
+  "robot_type": "ffw_sh5_rev1",
+  "joints": {
+    "finger_l_joint1": -0.010738,
+    "finger_l_joint2": 0.013806,
+    "finger_l_joint3": -0.019942,
+    "finger_l_joint4": -0.010738,
+    "finger_l_joint5": -0.044485,
+    "finger_l_joint6": 0.003068,
+    "finger_l_joint7": 0.0,
+    "finger_l_joint8": 0.0,
+    "finger_l_joint9": -0.041417,
+    "finger_l_joint10": 0.0,
+    "finger_l_joint11": 0.0,
+    "finger_l_joint12": 0.0,
+    "finger_l_joint13": -0.027612,
+    "finger_l_joint14": 0.009204,
+    "finger_l_joint15": 0.0,
+    "finger_l_joint16": 0.0,
+    "finger_l_joint17": -0.076699,
+    "finger_l_joint18": 0.0,
+    "finger_l_joint19": 0.0,
+    "finger_l_joint20": 0.00767,
+    "finger_r_joint1": 0.012272,
+    "finger_r_joint2": -0.006136,
+    "finger_r_joint3": 0.0,
+    "finger_r_joint4": 0.012272,
+    "finger_r_joint5": 0.053689,
+    "finger_r_joint6": 0.004602,
+    "finger_r_joint7": 0.009204,
+    "finger_r_joint8": 0.012272,
+    "finger_r_joint9": 0.042951,
+    "finger_r_joint10": 0.0,
+    "finger_r_joint11": 0.004602,
+    "finger_r_joint12": 0.0,
+    "finger_r_joint13": 0.039884,
+    "finger_r_joint14": 0.00767,
+    "finger_r_joint15": 0.0,
+    "finger_r_joint16": 0.0,
+    "finger_r_joint17": 0.041417,
+    "finger_r_joint18": 0.0,
+    "finger_r_joint19": 0.0,
+    "finger_r_joint20": 0.0,
+    "arm_l_joint1": -0.9,
+    "arm_l_joint2": 0.0,
+    "arm_l_joint3": 0.0,
+    "arm_l_joint4": -1.8,
+    "arm_l_joint5": 0.0,
+    "arm_l_joint6": 0.9,
+    "arm_l_joint7": 0.0,
+    "arm_r_joint1": -0.9,
+    "arm_r_joint2": 0.0,
+    "arm_r_joint3": 0.0,
+    "arm_r_joint4": -1.8,
+    "arm_r_joint5": 0.0,
+    "arm_r_joint6": 0.9,
+    "arm_r_joint7": 0.0
+  },
+  "provenance": "Reconstructed: Task 650 released fingers; raised shoulder/elbow pose checked against URDF. Not a recovered live capture.",
+  "bounded_finger_offsets": {
+    "finger_l_joint7": {
+      "captured": -0.001534,
+      "commanded": 0.0
+    },
+    "finger_l_joint8": {
+      "captured": -0.004602,
+      "commanded": 0.0
+    },
+    "finger_l_joint10": {
+      "captured": -0.004602,
+      "commanded": 0.0
+    },
+    "finger_l_joint11": {
+      "captured": -0.004602,
+      "commanded": 0.0
+    },
+    "finger_l_joint12": {
+      "captured": -0.006136,
+      "commanded": 0.0
+    },
+    "finger_l_joint15": {
+      "captured": -0.001534,
+      "commanded": 0.0
+    },
+    "finger_l_joint16": {
+      "captured": -0.001534,
+      "commanded": 0.0
+    },
+    "finger_l_joint18": {
+      "captured": -0.019942,
+      "commanded": 0.0
+    },
+    "finger_l_joint19": {
+      "captured": -0.00767,
+      "commanded": 0.0
+    },
+    "finger_r_joint3": {
+      "captured": -0.00767,
+      "commanded": 0.0
+    },
+    "finger_r_joint10": {
+      "captured": -0.013806,
+      "commanded": 0.0
+    },
+    "finger_r_joint12": {
+      "captured": -0.001534,
+      "commanded": 0.0
+    },
+    "finger_r_joint15": {
+      "captured": -0.006136,
+      "commanded": 0.0
+    },
+    "finger_r_joint16": {
+      "captured": -0.003068,
+      "commanded": 0.0
+    },
+    "finger_r_joint18": {
+      "captured": -0.01534,
+      "commanded": 0.0
+    },
+    "finger_r_joint19": {
+      "captured": -0.006136,
+      "commanded": 0.0
+    }
+  }
+}
