@@ -67,7 +67,11 @@ def generate_launch_description():
 
     params_file_arg = DeclareLaunchArgument(
         'params_file',
-        default_value=os.path.join(pkg_navigation, 'config', 'navigation.yaml'),
+        default_value=os.path.join(
+            pkg_navigation,
+            'config',
+            'navigation.yaml'
+        ),
         description='Full path to the Nav2 params file (navigation + localization)'
     )
 

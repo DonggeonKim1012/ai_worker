@@ -59,16 +59,6 @@ def generate_launch_description():
                               description='Whether to launch lidar.'),
         DeclareLaunchArgument('init_position', default_value='true',
                               description='Whether to launch the init_position node.'),
-        DeclareLaunchArgument('enable_collision_avoidance', default_value='false',
-                              choices=['true', 'false'],
-                              description='Enable camera-based end-effector collision stop.'),
-        DeclareLaunchArgument('lidar_scan_start', default_value='"45"',
-                              description='Left and right lidar scan start angle.'),
-        DeclareLaunchArgument('lidar_scan_stop', default_value='"315"',
-                              description='Left and right lidar scan stop angle.'),
-        DeclareLaunchArgument('controller_config',
-                              default_value='ffw_sh5_follower_ai_hardware_controller.yaml',
-                              description='Controller config filename; use the navigation profile to tune wheel behavior.'),
         DeclareLaunchArgument('model', default_value='ffw_sh5_rev1_follower',
                               description='Robot model name.'),
         DeclareLaunchArgument('use_head_eef_tracker', default_value='false',
@@ -115,7 +105,7 @@ def generate_launch_description():
 
     controller_manager_config = PathJoinSubstitution([
         FindPackageShare('ffw_bringup'), 'config', model,
-        LaunchConfiguration('controller_config')
+        'ffw_sh5_follower_ai_hardware_controller.yaml'
     ])
     rviz_config_file = PathJoinSubstitution([
         FindPackageShare('ffw_description'), 'rviz', 'ffw_sh5.rviz'
@@ -413,10 +403,6 @@ def generate_launch_description():
     lidar_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(PathJoinSubstitution([bringup_launch_dir,
                                                             'lidar_dual.launch.py'])),
-        launch_arguments={
-            'scan_range_start': LaunchConfiguration('lidar_scan_start'),
-            'scan_range_stop': LaunchConfiguration('lidar_scan_stop'),
-        }.items(),
         condition=IfCondition(launch_lidar)
     )
 
@@ -446,17 +432,10 @@ def generate_launch_description():
             'tolerance': 0.05,
             'queue_size': 10,
             'enable_shadow_filter': True,
-            'enable_average_filter': False,
+            'enable_average_filter': True,
         }, {
             'use_sim_time': use_sim,
         }],
-        condition=IfCondition(launch_lidar),
-    )
-
-    collision_avoidance = Node(
-        package='collision_avoidance', executable='environment_collision_avoidance',
-        name='environment_collision_avoidance', output='screen',
-        condition=IfCondition(LaunchConfiguration('enable_collision_avoidance')),
     )
 
     return LaunchDescription(
@@ -479,6 +458,5 @@ def generate_launch_description():
             lidar_timer_20s,
             lidar_timer_10s,
             dual_laser_merger_node,
-            collision_avoidance,
         ]
     )
