@@ -72,27 +72,6 @@
       </material>
     </visual>
   </link>
-  <joint name="lidar_l_joint" type="fixed">
-    <parent link="base_link"/>
-    <child link="lidar_l_link"/>
-    <origin rpy="0 0 1.57079632679" xyz="-0.111881 0.240 0.34432"/>
-  </joint>
-  <link name="lidar_l_link">
-  </link>
-  <joint name="lidar_r_joint" type="fixed">
-    <parent link="base_link"/>
-    <child link="lidar_r_link"/>
-    <origin rpy="0 0 -1.57079632679" xyz="-0.111881 -0.240 0.34432"/>
-  </joint>
-  <link name="lidar_r_link">
-  </link>
-  <joint name="imu_joint" type="fixed">
-    <parent link="base_link"/>
-    <child link="imu_link"/>
-    <origin rpy="0 0 0" xyz="-0.1464 0.0 0.26"/>
-  </joint>
-  <link name="imu_link">
-  </link>
   <link name="lift_link">
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>

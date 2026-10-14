@@ -1,0 +1,11 @@
+# Task423 MCAP cameras are rectified 672x376 at approximately 30 Hz.
+# ZED-M native VGA preserves the recorded field of view; resizing HD720 does not.
+# Used only by the Task_000423 follower launch. No actuator settings here.
+/**:
+  ros__parameters:
+    general:
+      grab_resolution: VGA
+      grab_frame_rate: 30
+      pub_resolution: NATIVE
+      pub_downscale_factor: 1.0
+      pub_frame_rate: 30.0

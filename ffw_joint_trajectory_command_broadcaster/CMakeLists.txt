@@ -18,6 +18,11 @@ set(THIS_PACKAGE_INCLUDE_DEPENDS
   rclcpp_lifecycle
   rcutils
   realtime_tools
+<<<<<<< HEAD
+=======
+  sensor_msgs
+  std_msgs
+>>>>>>> parent of 55f540b (Restore calibration services and robot model controllers)
   urdf
   trajectory_msgs
 )
@@ -45,6 +50,8 @@ target_include_directories(joint_trajectory_command_broadcaster PUBLIC
 )
 target_link_libraries(joint_trajectory_command_broadcaster PUBLIC
   ${builtin_interfaces_TARGETS}
+  ${sensor_msgs_TARGETS}
+  ${std_msgs_TARGETS}
   ${trajectory_msgs_TARGETS}
   controller_interface::controller_interface
   joint_trajectory_command_broadcaster_parameters

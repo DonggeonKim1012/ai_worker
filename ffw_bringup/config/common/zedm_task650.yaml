@@ -1,0 +1,10 @@
+# Task_000650: publish 640x360 at 15 FPS to reduce image transport load.
+# Keep HD720 capture and the original field of view.
+/**:
+  ros__parameters:
+    general:
+      grab_resolution: HD720
+      grab_frame_rate: 15
+      pub_resolution: CUSTOM
+      pub_downscale_factor: 2.0
+      pub_frame_rate: 15.0

@@ -1,0 +1,177 @@
+{
+  "source": "Live /joint_states on ROS domain 30, rmw_zenoh_cpp",
+  "captured_utc": "2026-09-30T01:52:56.887933+00:00",
+  "sample_count": 714,
+  "selection": "Median measured position per joint over 8 seconds, rounded to 6 decimal places. Existing arm approach steps retained.",
+  "capture_file": "Task_000650_capture.json",
+  "targets": {
+    "arm_l_joint_trajectory_executor": {
+      "joint_names": [
+        "arm_l_joint1",
+        "arm_l_joint2",
+        "arm_l_joint3",
+        "arm_l_joint4",
+        "arm_l_joint5",
+        "arm_l_joint6",
+        "arm_l_joint7"
+      ],
+      "positions": [
+        0.0,
+        0.0,
+        0.0,
+        -1.569981,
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    "hand_l_joint_trajectory_executor": {
+      "joint_names": [
+        "finger_l_joint1",
+        "finger_l_joint2",
+        "finger_l_joint3",
+        "finger_l_joint4",
+        "finger_l_joint5",
+        "finger_l_joint6",
+        "finger_l_joint7",
+        "finger_l_joint8",
+        "finger_l_joint9",
+        "finger_l_joint10",
+        "finger_l_joint11",
+        "finger_l_joint12",
+        "finger_l_joint13",
+        "finger_l_joint14",
+        "finger_l_joint15",
+        "finger_l_joint16",
+        "finger_l_joint17",
+        "finger_l_joint18",
+        "finger_l_joint19",
+        "finger_l_joint20"
+      ],
+      "positions": [
+        -0.010738,
+        0.013806,
+        -0.019942,
+        -0.010738,
+        -0.044485,
+        0.003068,
+        -0.001534,
+        -0.004602,
+        -0.041417,
+        -0.004602,
+        -0.004602,
+        -0.006136,
+        -0.027612,
+        0.009204,
+        -0.001534,
+        -0.001534,
+        -0.076699,
+        -0.019942,
+        -0.00767,
+        0.00767
+      ]
+    },
+    "arm_r_joint_trajectory_executor": {
+      "joint_names": [
+        "arm_r_joint1",
+        "arm_r_joint2",
+        "arm_r_joint3",
+        "arm_r_joint4",
+        "arm_r_joint5",
+        "arm_r_joint6",
+        "arm_r_joint7"
+      ],
+      "positions": [
+        0.0,
+        0.0,
+        0.0,
+        -1.569993,
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    "hand_r_joint_trajectory_executor": {
+      "joint_names": [
+        "finger_r_joint1",
+        "finger_r_joint2",
+        "finger_r_joint3",
+        "finger_r_joint4",
+        "finger_r_joint5",
+        "finger_r_joint6",
+        "finger_r_joint7",
+        "finger_r_joint8",
+        "finger_r_joint9",
+        "finger_r_joint10",
+        "finger_r_joint11",
+        "finger_r_joint12",
+        "finger_r_joint13",
+        "finger_r_joint14",
+        "finger_r_joint15",
+        "finger_r_joint16",
+        "finger_r_joint17",
+        "finger_r_joint18",
+        "finger_r_joint19",
+        "finger_r_joint20"
+      ],
+      "positions": [
+        0.012272,
+        -0.006136,
+        -0.00767,
+        0.012272,
+        0.053689,
+        0.004602,
+        0.009204,
+        0.012272,
+        0.042951,
+        -0.013806,
+        0.004602,
+        -0.001534,
+        0.039884,
+        0.00767,
+        -0.006136,
+        -0.003068,
+        0.041417,
+        -0.01534,
+        -0.006136,
+        -0.0
+      ]
+    },
+    "head_joint_trajectory_executor": {
+      "joint_names": [
+        "head_joint1",
+        "head_joint2"
+      ],
+      "positions": [
+        0.688757,
+        0.0
+      ]
+    },
+    "lift_joint_trajectory_executor": {
+      "joint_names": [
+        "lift_joint"
+      ],
+      "positions": [
+        0.0
+      ]
+    },
+    "swerve_steering_joint_trajectory_executor": {
+      "joint_names": [
+        "left_wheel_steer",
+        "right_wheel_steer",
+        "rear_wheel_steer"
+      ],
+      "positions": [
+        -0.000467,
+        -2.4e-05,
+        -0.00012
+      ]
+    }
+  },
+  "head_update": {
+    "captured_utc": "2026-09-30T02:13:19.416710+00:00",
+    "capture_file": "Task_000650_head_capture.json",
+    "sample_count": 300,
+    "selection": "Median measured head positions over 3 seconds; all other targets unchanged."
+  }
+}

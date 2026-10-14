@@ -1,0 +1,9 @@
+# Task_000802: ZED Mini lowest supported capture resolution (VGA, 672x376).
+/**:
+  ros__parameters:
+    general:
+      grab_resolution: VGA
+      grab_frame_rate: 30
+      pub_resolution: NATIVE
+      pub_downscale_factor: 1.0
+      pub_frame_rate: 30.0

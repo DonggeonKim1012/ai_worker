@@ -1,0 +1,448 @@
+{
+  "captured_utc": "2026-09-30T01:52:56.887933+00:00",
+  "joint_sample_count": 714,
+  "joints": {
+    "arm_l_joint1": {
+      "position": 0.0,
+      "min": 0.0,
+      "max": 0.0
+    },
+    "arm_l_joint2": {
+      "position": 0.0,
+      "min": 0.0,
+      "max": 0.0
+    },
+    "arm_l_joint3": {
+      "position": 0.0,
+      "min": 0.0,
+      "max": 0.0
+    },
+    "arm_l_joint4": {
+      "position": -1.5699813995013323,
+      "min": -1.5699813995013323,
+      "max": -1.5699813995013323
+    },
+    "arm_l_joint5": {
+      "position": 0.0,
+      "min": 0.0,
+      "max": 0.0
+    },
+    "arm_l_joint6": {
+      "position": 0.0,
+      "min": 0.0,
+      "max": 0.0
+    },
+    "arm_l_joint7": {
+      "position": 0.0,
+      "min": 0.0,
+      "max": 0.0
+    },
+    "arm_r_joint1": {
+      "position": 0.0,
+      "min": 0.0,
+      "max": 0.0
+    },
+    "arm_r_joint2": {
+      "position": 0.0,
+      "min": 0.0,
+      "max": 0.0
+    },
+    "arm_r_joint3": {
+      "position": 0.0,
+      "min": 0.0,
+      "max": 0.0
+    },
+    "arm_r_joint4": {
+      "position": -1.5699933837262376,
+      "min": -1.5699933837262376,
+      "max": -1.5699933837262376
+    },
+    "arm_r_joint5": {
+      "position": 0.0,
+      "min": 0.0,
+      "max": 0.0
+    },
+    "arm_r_joint6": {
+      "position": 0.0,
+      "min": 0.0,
+      "max": 0.0
+    },
+    "arm_r_joint7": {
+      "position": 0.0,
+      "min": 0.0,
+      "max": 0.0
+    },
+    "finger_l_joint1": {
+      "position": -0.01073786551540623,
+      "min": -0.01073786551540623,
+      "max": -0.01073786551540623
+    },
+    "finger_l_joint10": {
+      "position": -0.004601942363863909,
+      "min": -0.004601942363863909,
+      "max": -0.004601942363863909
+    },
+    "finger_l_joint11": {
+      "position": -0.004601942363863909,
+      "min": -0.004601942363863909,
+      "max": -0.004601942363863909
+    },
+    "finger_l_joint12": {
+      "position": -0.0061359231517497115,
+      "min": -0.0061359231517497115,
+      "max": -0.0061359231517497115
+    },
+    "finger_l_joint13": {
+      "position": -0.027611654182148282,
+      "min": -0.029145634970034084,
+      "max": -0.027611654182148282
+    },
+    "finger_l_joint14": {
+      "position": 0.009203884727106981,
+      "min": 0.009203884727106981,
+      "max": 0.009203884727106981
+    },
+    "finger_l_joint15": {
+      "position": -0.001533980788092748,
+      "min": -0.001533980788092748,
+      "max": -2.0694557179012918e-13
+    },
+    "finger_l_joint16": {
+      "position": -0.001533980788092748,
+      "min": -0.001533980788092748,
+      "max": -0.001533980788092748
+    },
+    "finger_l_joint17": {
+      "position": -0.07669903939448908,
+      "min": -0.07823302018237444,
+      "max": -0.07669903939448908
+    },
+    "finger_l_joint18": {
+      "position": -0.019941750242720158,
+      "min": -0.02147573103060596,
+      "max": -0.0184077694548348
+    },
+    "finger_l_joint19": {
+      "position": -0.00766990393963507,
+      "min": -0.00766990393963507,
+      "max": -0.00766990393963507
+    },
+    "finger_l_joint2": {
+      "position": 0.013805827090763945,
+      "min": 0.013805827090763945,
+      "max": 0.013805827090763945
+    },
+    "finger_l_joint20": {
+      "position": 0.007669903939221179,
+      "min": 0.007669903939221179,
+      "max": 0.007669903939221179
+    },
+    "finger_l_joint3": {
+      "position": -0.019941750242720158,
+      "min": -0.019941750242720158,
+      "max": -0.019941750242720158
+    },
+    "finger_l_joint4": {
+      "position": -0.01073786551540623,
+      "min": -0.01073786551540623,
+      "max": -0.01073786551540623
+    },
+    "finger_l_joint5": {
+      "position": -0.04448544284889033,
+      "min": -0.046019423636776136,
+      "max": -0.04448544284889033
+    },
+    "finger_l_joint6": {
+      "position": 0.0030679615755642153,
+      "min": 0.0030679615755642153,
+      "max": 0.0030679615755642153
+    },
+    "finger_l_joint7": {
+      "position": -0.001533980788092748,
+      "min": -0.001533980788092748,
+      "max": -0.001533980788092748
+    },
+    "finger_l_joint8": {
+      "position": -0.004601942363863909,
+      "min": -0.004601942363863909,
+      "max": -0.004601942363863909
+    },
+    "finger_l_joint9": {
+      "position": -0.04141748127311917,
+      "min": -0.04141748127311917,
+      "max": -0.04141748127311917
+    },
+    "finger_r_joint1": {
+      "position": 0.012271846302878142,
+      "min": 0.012271846302878142,
+      "max": 0.012271846302878142
+    },
+    "finger_r_joint10": {
+      "position": -0.013805827091177836,
+      "min": -0.013805827091177836,
+      "max": -0.013805827091177836
+    },
+    "finger_r_joint11": {
+      "position": 0.004601942363450018,
+      "min": 0.004601942363450018,
+      "max": 0.004601942363450018
+    },
+    "finger_r_joint12": {
+      "position": -0.001533980788092748,
+      "min": -0.001533980788092748,
+      "max": -0.001533980788092748
+    },
+    "finger_r_joint13": {
+      "position": 0.03988350048481992,
+      "min": 0.03988350048481992,
+      "max": 0.03988350048481992
+    },
+    "finger_r_joint14": {
+      "position": 0.007669903939221179,
+      "min": 0.007669903939221179,
+      "max": 0.007669903939221179
+    },
+    "finger_r_joint15": {
+      "position": -0.0061359231517497115,
+      "min": -0.0061359231517497115,
+      "max": -0.0061359231517497115
+    },
+    "finger_r_joint16": {
+      "position": -0.0030679615759781065,
+      "min": -0.0030679615759781065,
+      "max": -0.0030679615759781065
+    },
+    "finger_r_joint17": {
+      "position": 0.04141748127270528,
+      "min": 0.04141748127270528,
+      "max": 0.04141748127270528
+    },
+    "finger_r_joint18": {
+      "position": -0.015339807879063194,
+      "min": -0.015339807879063194,
+      "max": -0.015339807879063194
+    },
+    "finger_r_joint19": {
+      "position": -0.0061359231517497115,
+      "min": -0.0061359231517497115,
+      "max": -0.0061359231517497115
+    },
+    "finger_r_joint2": {
+      "position": -0.0061359231517497115,
+      "min": -0.0061359231517497115,
+      "max": -0.0061359231517497115
+    },
+    "finger_r_joint20": {
+      "position": -2.0694557179012918e-13,
+      "min": -2.0694557179012918e-13,
+      "max": -2.0694557179012918e-13
+    },
+    "finger_r_joint3": {
+      "position": -0.00766990393963507,
+      "min": -0.00766990393963507,
+      "max": -0.00766990393963507
+    },
+    "finger_r_joint4": {
+      "position": 0.012271846302878142,
+      "min": 0.012271846302878142,
+      "max": 0.012271846302878142
+    },
+    "finger_r_joint5": {
+      "position": 0.05368932757579037,
+      "min": 0.05368932757579037,
+      "max": 0.05368932757579037
+    },
+    "finger_r_joint6": {
+      "position": 0.004601942363450018,
+      "min": 0.004601942363450018,
+      "max": 0.004601942363450018
+    },
+    "finger_r_joint7": {
+      "position": 0.009203884727106981,
+      "min": 0.009203884727106981,
+      "max": 0.009203884727106981
+    },
+    "finger_r_joint8": {
+      "position": 0.012271846302878142,
+      "min": 0.012271846302878142,
+      "max": 0.012271846302878142
+    },
+    "finger_r_joint9": {
+      "position": 0.042951462060591084,
+      "min": 0.042951462060591084,
+      "max": 0.042951462060591084
+    },
+    "gripper_l_joint1": {
+      "position": 0.0,
+      "min": 0.0,
+      "max": 0.0
+    },
+    "gripper_r_joint1": {
+      "position": 0.0,
+      "min": 0.0,
+      "max": 0.0
+    },
+    "head_joint1": {
+      "position": 0.5691068723053658,
+      "min": 0.5691068723053658,
+      "max": 0.5706408530932516
+    },
+    "head_joint2": {
+      "position": -2.0694557179012918e-13,
+      "min": -0.001533980788092748,
+      "max": -2.0694557179012918e-13
+    },
+    "left_wheel_drive": {
+      "position": 3.5952674716069715e-05,
+      "min": 3.5952674716069715e-05,
+      "max": 3.5952674716069715e-05
+    },
+    "left_wheel_steer": {
+      "position": -0.0004673847713089063,
+      "min": -0.0004673847713089063,
+      "max": -0.0004673847713089063
+    },
+    "lift_joint": {
+      "position": 0.0,
+      "min": 0.0,
+      "max": 0.0
+    },
+    "rear_wheel_drive": {
+      "position": 3.5952674716069715e-05,
+      "min": 3.5952674716069715e-05,
+      "max": 3.5952674716069715e-05
+    },
+    "rear_wheel_steer": {
+      "position": -0.00011984224905356572,
+      "min": -0.00011984224905356572,
+      "max": -0.00011984224905356572
+    },
+    "right_wheel_drive": {
+      "position": 3.5952674716069715e-05,
+      "min": 3.5952674716069715e-05,
+      "max": 3.5952674716069715e-05
+    },
+    "right_wheel_steer": {
+      "position": -2.3968449810713143e-05,
+      "min": -2.3968449810713143e-05,
+      "max": -2.3968449810713143e-05
+    }
+  },
+  "cameras": {
+    "cam_left_head": {
+      "topic": "/zed/zed_node/left/image_rect_color/compressed",
+      "bytes": 285509,
+      "shape": [
+        720,
+        1280,
+        3
+      ],
+      "frames": 111,
+      "fps": 13.834092619204517,
+      "subscribers": [
+        {
+          "node": "//task650_readonly_capture",
+          "reliability": "2"
+        },
+        {
+          "node": "//cyclo_data",
+          "reliability": "2"
+        },
+        {
+          "node": "//zenoh_subscriber_a6f0310d",
+          "reliability": "1"
+        },
+        {
+          "node": "//zenoh_subscriber_5c9ba39a",
+          "reliability": "1"
+        }
+      ]
+    },
+    "cam_right_head": {
+      "topic": "/zed/zed_node/right/image_rect_color/compressed",
+      "bytes": 287696,
+      "shape": [
+        720,
+        1280,
+        3
+      ],
+      "frames": 112,
+      "fps": 15.6681778855729,
+      "subscribers": [
+        {
+          "node": "//task650_readonly_capture",
+          "reliability": "2"
+        },
+        {
+          "node": "//cyclo_data",
+          "reliability": "2"
+        },
+        {
+          "node": "//zenoh_subscriber_9cb6fd4e",
+          "reliability": "1"
+        }
+      ]
+    },
+    "cam_left_wrist": {
+      "topic": "/camera_left/camera_left/color/image_rect_raw/compressed",
+      "bytes": 76571,
+      "shape": [
+        480,
+        640,
+        3
+      ],
+      "frames": 112,
+      "fps": 15.733925764305294,
+      "subscribers": [
+        {
+          "node": "//task650_readonly_capture",
+          "reliability": "2"
+        },
+        {
+          "node": "//cyclo_data",
+          "reliability": "2"
+        },
+        {
+          "node": "//zenoh_subscriber_a5361ad8",
+          "reliability": "1"
+        }
+      ]
+    },
+    "cam_right_wrist": {
+      "topic": "/camera_right/camera_right/color/image_rect_raw/compressed",
+      "bytes": 80162,
+      "shape": [
+        480,
+        640,
+        3
+      ],
+      "frames": 112,
+      "fps": 15.741279366011366,
+      "subscribers": [
+        {
+          "node": "//task650_readonly_capture",
+          "reliability": "2"
+        },
+        {
+          "node": "//cyclo_data",
+          "reliability": "2"
+        },
+        {
+          "node": "//zenoh_subscriber_0356d05a",
+          "reliability": "1"
+        }
+      ]
+    }
+  },
+  "statuses": {
+    "/data/recording/status": {
+      "unavailable_type": "interfaces/msg/RecordingStatus"
+    },
+    "/data/status": {
+      "unavailable_type": "interfaces/msg/DataOperationStatus"
+    },
+    "/rosbag_recorder/monitor": {
+      "unavailable_type": "rosbag_recorder/msg/RecordingMonitor"
+    }
+  }
+}

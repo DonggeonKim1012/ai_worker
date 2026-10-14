@@ -1,0 +1,192 @@
+{
+  "dataset": "/home/robotis/cyclo_intelligence/workspace/rosbag2/Dongkkka/Task_000519_Pour_Water_Into_Cup_Hand_Intern_MCAP",
+  "source_task": "000519",
+  "episodes_analyzed": 81,
+  "excluded_000608_episodes": 78,
+  "selected_episode": 58,
+  "selection": "Actual episode closest by total absolute arm-joint distance to the across-episode median; first 0.2s temporal median per joint. Not an original recovered initialization YAML.",
+  "arm_source": "/arm_hand/joint_states",
+  "hand_source": "recorded leader hand commands, avoiding old robot encoder biases",
+  "head_lift_source": "first 1s /tf, URDF joint axis and lift origin z=1.4316",
+  "final_head": [
+    0.6964272776998742,
+    0.015339807878649301
+  ],
+  "final_lift": -0.13779000000000008,
+  "head_pitch_recorded_range": [
+    0.691825,
+    0.696427
+  ],
+  "lift_recorded_range": [
+    -0.14392,
+    -0.12144
+  ],
+  "source_hashes": {
+    "robot.urdf": "5febdce609d4ffd88f18106c93b535115f7c575cf52dc4d08354369a60572a7b",
+    "58_0.mcap": "02d0c7f5e1fc6a8a99c838e4a302eeaa3c2e53c455cfcd1a2fc995c2e3e3d081"
+  },
+  "targets": {
+    "arm_l_joint_trajectory_executor": {
+      "joint_names": [
+        "arm_l_joint1",
+        "arm_l_joint2",
+        "arm_l_joint3",
+        "arm_l_joint4",
+        "arm_l_joint5",
+        "arm_l_joint6",
+        "arm_l_joint7"
+      ],
+      "positions": [
+        -0.025419,
+        0.096629,
+        -0.390075,
+        -2.043155,
+        0.073619,
+        0.407236,
+        0.428125
+      ]
+    },
+    "hand_l_joint_trajectory_executor": {
+      "joint_names": [
+        "finger_l_joint1",
+        "finger_l_joint2",
+        "finger_l_joint3",
+        "finger_l_joint4",
+        "finger_l_joint5",
+        "finger_l_joint6",
+        "finger_l_joint7",
+        "finger_l_joint8",
+        "finger_l_joint9",
+        "finger_l_joint10",
+        "finger_l_joint11",
+        "finger_l_joint12",
+        "finger_l_joint13",
+        "finger_l_joint14",
+        "finger_l_joint15",
+        "finger_l_joint16",
+        "finger_l_joint17",
+        "finger_l_joint18",
+        "finger_l_joint19",
+        "finger_l_joint20"
+      ],
+      "positions": [
+        0.0,
+        1.5,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    "arm_r_joint_trajectory_executor": {
+      "joint_names": [
+        "arm_r_joint1",
+        "arm_r_joint2",
+        "arm_r_joint3",
+        "arm_r_joint4",
+        "arm_r_joint5",
+        "arm_r_joint6",
+        "arm_r_joint7"
+      ],
+      "positions": [
+        -0.03835,
+        -0.116607,
+        -0.287454,
+        -1.826995,
+        -0.063504,
+        0.273288,
+        0.258247
+      ]
+    },
+    "hand_r_joint_trajectory_executor": {
+      "joint_names": [
+        "finger_r_joint1",
+        "finger_r_joint2",
+        "finger_r_joint3",
+        "finger_r_joint4",
+        "finger_r_joint5",
+        "finger_r_joint6",
+        "finger_r_joint7",
+        "finger_r_joint8",
+        "finger_r_joint9",
+        "finger_r_joint10",
+        "finger_r_joint11",
+        "finger_r_joint12",
+        "finger_r_joint13",
+        "finger_r_joint14",
+        "finger_r_joint15",
+        "finger_r_joint16",
+        "finger_r_joint17",
+        "finger_r_joint18",
+        "finger_r_joint19",
+        "finger_r_joint20"
+      ],
+      "positions": [
+        0.0,
+        -1.5,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    "head_joint_trajectory_executor": {
+      "joint_names": [
+        "head_joint1",
+        "head_joint2"
+      ],
+      "positions": [
+        0.696427,
+        0.01534
+      ]
+    },
+    "lift_joint_trajectory_executor": {
+      "joint_names": [
+        "lift_joint"
+      ],
+      "positions": [
+        -0.13779
+      ]
+    },
+    "swerve_steering_joint_trajectory_executor": {
+      "joint_names": [
+        "left_wheel_steer",
+        "right_wheel_steer",
+        "rear_wheel_steer"
+      ],
+      "positions": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    }
+  }
+}

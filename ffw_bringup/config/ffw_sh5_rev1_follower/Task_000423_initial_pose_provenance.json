@@ -1,0 +1,293 @@
+{
+  "dataset": "/home/robotis/cyclo_intelligence/workspace/rosbag2/Dongkkka/Task_000423_0819_Stack_paper_cup_MCAP",
+  "model": "/home/robotis/cyclo_intelligence/workspace/model/lerobot/Dongkkka/Task000423_ViTacFormer_0821",
+  "source_task": "000423",
+  "episodes_analyzed": 97,
+  "episode_ids": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    17,
+    18,
+    19,
+    20,
+    21,
+    22,
+    23,
+    24,
+    25,
+    26,
+    27,
+    28,
+    29,
+    30,
+    31,
+    32,
+    33,
+    34,
+    35,
+    36,
+    37,
+    38,
+    39,
+    40,
+    41,
+    42,
+    43,
+    44,
+    45,
+    46,
+    47,
+    48,
+    49,
+    50,
+    51,
+    52,
+    53,
+    54,
+    55,
+    56,
+    57,
+    58,
+    59,
+    60,
+    61,
+    62,
+    63,
+    64,
+    65,
+    66,
+    67,
+    68,
+    69,
+    70,
+    71,
+    72,
+    73,
+    74,
+    75,
+    76,
+    77,
+    78,
+    79,
+    80,
+    81,
+    82,
+    87,
+    88,
+    89,
+    90,
+    91,
+    92,
+    93,
+    94,
+    95,
+    96,
+    97,
+    98,
+    99,
+    100
+  ],
+  "selected_episode": 64,
+  "selection": "Real episode closest by total absolute 14-arm-joint distance to the across-episode median; first 0.2s temporal median per joint. Representative recorded start, not the original initialization YAML.",
+  "arm_source": "/arm_hand/joint_states",
+  "hand_source": "recorded leader hand commands, avoiding old robot encoder offsets; right hand all zero",
+  "head_lift_source": "first 1s /tf with recorded URDF axes and lift origin z=1.4316",
+  "final_head": [
+    0.7117670855787304,
+    0.009203884727106983
+  ],
+  "final_lift": -0.14500000000000002,
+  "source_hashes": {
+    "64_0.mcap": "8d751ecadb37a9a24e1152ae4b4c0c611cb68ef6ce3b92e2019308ccc87aa4b1",
+    "robot.urdf": "5febdce609d4ffd88f18106c93b535115f7c575cf52dc4d08354369a60572a7b"
+  },
+  "targets": {
+    "arm_l_joint_trajectory_executor": {
+      "joint_names": [
+        "arm_l_joint1",
+        "arm_l_joint2",
+        "arm_l_joint3",
+        "arm_l_joint4",
+        "arm_l_joint5",
+        "arm_l_joint6",
+        "arm_l_joint7"
+      ],
+      "positions": [
+        -0.095107,
+        0.101231,
+        -0.200939,
+        -1.74875,
+        0.133444,
+        0.172561,
+        0.121951
+      ]
+    },
+    "hand_l_joint_trajectory_executor": {
+      "joint_names": [
+        "finger_l_joint1",
+        "finger_l_joint2",
+        "finger_l_joint3",
+        "finger_l_joint4",
+        "finger_l_joint5",
+        "finger_l_joint6",
+        "finger_l_joint7",
+        "finger_l_joint8",
+        "finger_l_joint9",
+        "finger_l_joint10",
+        "finger_l_joint11",
+        "finger_l_joint12",
+        "finger_l_joint13",
+        "finger_l_joint14",
+        "finger_l_joint15",
+        "finger_l_joint16",
+        "finger_l_joint17",
+        "finger_l_joint18",
+        "finger_l_joint19",
+        "finger_l_joint20"
+      ],
+      "positions": [
+        0.0,
+        1.5,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    "arm_r_joint_trajectory_executor": {
+      "joint_names": [
+        "arm_r_joint1",
+        "arm_r_joint2",
+        "arm_r_joint3",
+        "arm_r_joint4",
+        "arm_r_joint5",
+        "arm_r_joint6",
+        "arm_r_joint7"
+      ],
+      "positions": [
+        -0.101458,
+        -0.14266,
+        0.072457,
+        -1.665999,
+        -0.101267,
+        0.119639,
+        -0.071323
+      ]
+    },
+    "hand_r_joint_trajectory_executor": {
+      "joint_names": [
+        "finger_r_joint1",
+        "finger_r_joint2",
+        "finger_r_joint3",
+        "finger_r_joint4",
+        "finger_r_joint5",
+        "finger_r_joint6",
+        "finger_r_joint7",
+        "finger_r_joint8",
+        "finger_r_joint9",
+        "finger_r_joint10",
+        "finger_r_joint11",
+        "finger_r_joint12",
+        "finger_r_joint13",
+        "finger_r_joint14",
+        "finger_r_joint15",
+        "finger_r_joint16",
+        "finger_r_joint17",
+        "finger_r_joint18",
+        "finger_r_joint19",
+        "finger_r_joint20"
+      ],
+      "positions": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    "head_joint_trajectory_executor": {
+      "joint_names": [
+        "head_joint1",
+        "head_joint2"
+      ],
+      "positions": [
+        0.69,
+        0.009204
+      ]
+    },
+    "lift_joint_trajectory_executor": {
+      "joint_names": [
+        "lift_joint"
+      ],
+      "positions": [
+        -0.145
+      ]
+    },
+    "swerve_steering_joint_trajectory_executor": {
+      "joint_names": [
+        "left_wheel_steer",
+        "right_wheel_steer",
+        "rear_wheel_steer"
+      ],
+      "positions": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    }
+  },
+  "runtime_adjustments": {
+    "head_joint1": {
+      "recorded_target_rad": 0.711767,
+      "applied_target_rad": 0.69,
+      "reason": "Recorded target exceeds current dxl61 Max Position Limit=2500 (about 0.69336 rad). Applied target stays inside the unchanged motor limit and within the existing 0.025-rad recorded-pose tolerance.",
+      "motor_id": 61,
+      "max_position_limit_counts": 2500,
+      "recorded_pose_tolerance_rad": 0.025
+    }
+  }
+}
