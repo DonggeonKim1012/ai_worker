@@ -16,6 +16,7 @@
 #define JOINT_TRAJECTORY_COMMAND_BROADCASTER__JOINT_TRAJECTORY_COMMAND_BROADCASTER_HPP_
 
 #include <memory>
+#include <atomic>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -28,6 +29,8 @@
   <ffw_joint_trajectory_command_broadcaster/joint_trajectory_command_broadcaster_parameters.hpp>
 #include "realtime_tools/realtime_publisher.hpp"
 #include "sensor_msgs/msg/joint_state.hpp"
+#include "std_msgs/msg/u_int8.hpp"
+#include "std_msgs/msg/string.hpp"
 #include "urdf/model.h"
 #include "trajectory_msgs/msg/joint_trajectory.hpp"
 #include "rclcpp/subscription.hpp"
@@ -96,6 +99,7 @@ protected:
   double calculate_mean_error() const;
   void update_trigger_state(const rclcpp::Time & current_time);
   bool check_trigger_active() const;
+  void update_joystick_arm_modes(const rclcpp::Time & current_time);
 
 protected:
   // Optional parameters
@@ -113,6 +117,8 @@ protected:
   std::unordered_map<std::string,
     std::shared_ptr<realtime_tools::RealtimePublisher<trajectory_msgs::msg::JointTrajectory>>>
   realtime_joint_trajectory_publishers_;
+  std::unordered_map<std::string, std::shared_ptr<rclcpp::Publisher<std_msgs::msg::UInt8>>>
+  teleop_state_publishers_;
   // RT messages for trajectory (one per group)
   std::unordered_map<std::string, trajectory_msgs::msg::JointTrajectory> group_traj_msgs_;
 
@@ -130,7 +136,12 @@ protected:
 
   // Follower joint states tracking
   std::shared_ptr<rclcpp::Subscription<sensor_msgs::msg::JointState>> joint_states_subscriber_;
+  std::shared_ptr<rclcpp::Subscription<std_msgs::msg::String>> joystick_short_press_subscriber_;
+  std::atomic<unsigned int> left_short_press_events_{0};
+  std::atomic<unsigned int> right_short_press_events_{0};
   std::unordered_map<std::string, double> follower_joint_positions_;
+  std::unordered_map<std::string, rclcpp::Time> group_slow_start_time_;
+  std::unordered_map<std::string, std::vector<double>> group_slow_start_positions_;
   bool joints_synced_ = false;
   bool first_publish_ = true;
 
@@ -145,6 +156,10 @@ protected:
   rclcpp::Time trigger_start_time_{0, 0, RCL_ROS_TIME};  // Initialize to zero time
   bool trigger_counting_ = false;
   bool mode_changed_in_this_trigger_ = false;
+  std::unordered_map<std::string, bool> group_teleoperation_active_ = {
+    {"left", false}, {"right", false}};
+  std::unordered_map<std::string, bool> joystick_button_pressed_ = {
+    {"left", false}, {"right", false}};
 };
 
 }  // namespace joint_trajectory_command_broadcaster

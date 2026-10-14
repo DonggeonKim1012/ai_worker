@@ -29,6 +29,7 @@
 #include "rclcpp/qos.hpp"
 #include "rclcpp/time.hpp"
 #include "std_msgs/msg/header.hpp"
+#include "std_msgs/msg/u_int8.hpp"
 #include "trajectory_msgs/msg/joint_trajectory.hpp"
 #include "sensor_msgs/msg/joint_state.hpp"
 #include "urdf/model.h"
@@ -78,6 +79,20 @@ const
   for (const auto & joint : params_.right_joints) {
     state_interfaces_config.names.push_back(joint + "/" + HW_IF_POSITION);
   }
+  if (params_.use_joystick_arm_toggles && !params_.joystick_short_press_events) {
+    state_interfaces_config.names.push_back("sensorxel_l_joy/JOYSTICK TACT SWITCH");
+    state_interfaces_config.names.push_back("sensorxel_r_joy/JOYSTICK TACT SWITCH");
+  } else {
+    // Trigger inputs are required even when the follower arm command excludes grippers.
+    for (const auto * trigger_joint : {"gripper_l_joint1", "gripper_r_joint1"}) {
+      const std::string interface_name = std::string(trigger_joint) + "/" + HW_IF_POSITION;
+      if (std::find(state_interfaces_config.names.begin(), state_interfaces_config.names.end(),
+        interface_name) == state_interfaces_config.names.end())
+      {
+        state_interfaces_config.names.push_back(interface_name);
+      }
+    }
+  }
   return state_interfaces_config;
 }
 
@@ -89,6 +104,12 @@ controller_interface::CallbackReturn JointTrajectoryCommandBroadcaster::on_confi
     return controller_interface::CallbackReturn::ERROR;
   }
   params_ = param_listener_->get_params();
+  if (params_.joystick_slow_start_duration < 0.0 ||
+    !std::isfinite(params_.joystick_slow_start_duration))
+  {
+    RCLCPP_ERROR(get_node()->get_logger(), "joystick_slow_start_duration must be finite and nonnegative");
+    return controller_interface::CallbackReturn::ERROR;
+  }
 
   // Map interface if needed
   map_interface_to_joint_state_.clear();
@@ -151,6 +172,12 @@ controller_interface::CallbackReturn JointTrajectoryCommandBroadcaster::on_confi
         get_node()->get_logger(),
         "Created joint trajectory publisher for group '%s' on topic: %s with %zu joints",
         group_name.c_str(), topic_name.c_str(), group_joints.size());
+
+      if (params_.use_joystick_arm_toggles) {
+        teleop_state_publishers_[group_name] =
+          get_node()->create_publisher<std_msgs::msg::UInt8>(
+          group_name + "_teleop_state", rclcpp::SystemDefaultsQoS());
+      }
     }
 
     // Store the groups for later use
@@ -161,6 +188,18 @@ controller_interface::CallbackReturn JointTrajectoryCommandBroadcaster::on_confi
       params_.follower_joint_states_topic, rclcpp::SystemDefaultsQoS(),
       std::bind(&JointTrajectoryCommandBroadcaster::joint_states_callback, this,
         std::placeholders::_1));
+
+    if (params_.use_joystick_arm_toggles && params_.joystick_short_press_events) {
+      joystick_short_press_subscriber_ = get_node()->create_subscription<std_msgs::msg::String>(
+        params_.joystick_short_press_topic, rclcpp::SystemDefaultsQoS(),
+        [this](const std_msgs::msg::String::SharedPtr msg) {
+          if (msg->data == "left") {
+            left_short_press_events_.fetch_add(1, std::memory_order_relaxed);
+          } else if (msg->data == "right") {
+            right_short_press_events_.fetch_add(1, std::memory_order_relaxed);
+          }
+        });
+    }
 
     RCLCPP_INFO(
       get_node()->get_logger(),
@@ -231,6 +270,10 @@ controller_interface::CallbackReturn JointTrajectoryCommandBroadcaster::on_deact
   group_joint_offsets_.clear();
   group_topic_names_.clear();
   group_reverse_joints_.clear();
+  group_slow_start_time_.clear();
+  group_slow_start_positions_.clear();
+  left_short_press_events_.store(0, std::memory_order_relaxed);
+  right_short_press_events_.store(0, std::memory_order_relaxed);
 
   return CallbackReturn::SUCCESS;
 }
@@ -433,6 +476,47 @@ void JointTrajectoryCommandBroadcaster::update_trigger_state(const rclcpp::Time 
   }
 }
 
+void JointTrajectoryCommandBroadcaster::update_joystick_arm_modes(
+  const rclcpp::Time & current_time)
+{
+  const std::pair<const char *, const char *> bindings[] = {
+    {"left", "sensorxel_l_joy"},
+    {"right", "sensorxel_r_joy"},
+  };
+
+  for (const auto & [group_name, sensor_name] : bindings) {
+    bool toggle = false;
+    if (params_.joystick_short_press_events) {
+      auto & events = group_name[0] == 'l' ? left_short_press_events_ : right_short_press_events_;
+      toggle = (events.exchange(0, std::memory_order_relaxed) % 2) != 0;
+    } else {
+      const double value =
+        get_value(name_if_value_mapping_, sensor_name, "JOYSTICK TACT SWITCH");
+      const bool pressed = !std::isnan(value) && value > 0.5;
+      bool & was_pressed = joystick_button_pressed_[group_name];
+      toggle = pressed && !was_pressed;
+      was_pressed = pressed;
+    }
+
+    if (toggle) {
+      bool & active = group_teleoperation_active_[group_name];
+      active = !active;
+      if (active) {
+        joints_synced_ = false;
+        first_publish_ = true;
+        group_slow_start_time_[group_name] = current_time;
+        group_slow_start_positions_.erase(group_name);
+      } else {
+        group_slow_start_time_.erase(group_name);
+        group_slow_start_positions_.erase(group_name);
+      }
+      RCLCPP_INFO(
+        get_node()->get_logger(), "%s arm teleoperation %s",
+        group_name, active ? "ACTIVATED" : "STOPPED");
+    }
+  }
+}
+
 bool JointTrajectoryCommandBroadcaster::check_joints_synced() const
 {
   double mean_error = calculate_mean_error();
@@ -454,12 +538,21 @@ controller_interface::return_type JointTrajectoryCommandBroadcaster::update(
     }
   }
 
-  // Update trigger state for auto mode control
-  update_trigger_state(time);
-
-  // Skip publishing if auto mode is STOPPED
-  if (auto_mode_ == AutoMode::STOPPED) {
-    return controller_interface::return_type::OK;
+  if (params_.use_joystick_arm_toggles) {
+    update_joystick_arm_modes(time);
+    for (const auto & group_name : trajectory_groups_) {
+      std_msgs::msg::UInt8 state;
+      state.data = group_teleoperation_active_[group_name] ? 1 : 0;
+      teleop_state_publishers_[group_name]->publish(state);
+    }
+    if (!group_teleoperation_active_["left"] && !group_teleoperation_active_["right"]) {
+      return controller_interface::return_type::OK;
+    }
+  } else {
+    update_trigger_state(time);
+    if (auto_mode_ == AutoMode::STOPPED) {
+      return controller_interface::return_type::OK;
+    }
   }
 
   // Calculate mean error and check if joints are synced
@@ -483,6 +576,9 @@ controller_interface::return_type JointTrajectoryCommandBroadcaster::update(
 
   // Publish JointTrajectory messages for each group with current positions
   for (const auto & group_name : trajectory_groups_) {
+    if (params_.use_joystick_arm_toggles && !group_teleoperation_active_[group_name]) {
+      continue;
+    }
     const auto & group_joints = group_joint_names_[group_name];
     // Safely get group offsets and reverse joints
     std::vector<double> group_offsets;
@@ -533,6 +629,61 @@ controller_interface::return_type JointTrajectoryCommandBroadcaster::update(
         }
 
         traj_msg.points[0].positions[i] = pos_value;
+      }
+
+      if (params_.use_joystick_arm_toggles && params_.joystick_slow_start_duration > 0.0) {
+        auto start_time = group_slow_start_time_.find(group_name);
+        if (start_time != group_slow_start_time_.end()) {
+          auto start_positions = group_slow_start_positions_.find(group_name);
+          if (start_positions == group_slow_start_positions_.end()) {
+            std::vector<double> measured;
+            measured.reserve(num_joints);
+            bool complete = true;
+            for (const auto & joint : group_joints) {
+              auto follower = follower_joint_positions_.find(joint);
+              if (follower == follower_joint_positions_.end() || !std::isfinite(follower->second)) {
+                complete = false;
+                break;
+              }
+              measured.push_back(follower->second);
+            }
+            if (!complete) {
+              continue;  // Never ramp from an unknown follower pose.
+            }
+            start_positions = group_slow_start_positions_.emplace(group_name, std::move(measured)).first;
+            start_time->second = time;
+          }
+          const double elapsed = (time - start_time->second).seconds();
+          const double amount = std::clamp(elapsed / params_.joystick_slow_start_duration, 0.0, 1.0);
+          for (size_t i = 0; i < num_joints; ++i) {
+            traj_msg.points[0].positions[i] = start_positions->second[i] + amount *
+              (traj_msg.points[0].positions[i] - start_positions->second[i]);
+          }
+          if (amount >= 1.0) {
+            group_slow_start_time_.erase(start_time);
+            group_slow_start_positions_.erase(start_positions);
+          } else {
+            traj_msg.points[0].time_from_start = rclcpp::Duration::from_seconds(0.02);
+            realtime_publisher->try_publish(traj_msg);
+            continue;
+          }
+        }
+        bool close_to_follower = true;
+        for (size_t i = 0; i < num_joints; ++i) {
+          auto follower = follower_joint_positions_.find(group_joints[i]);
+          if (follower == follower_joint_positions_.end() ||
+            !std::isfinite(follower->second) ||
+            std::abs(traj_msg.points[0].positions[i] - follower->second) > 0.15)
+          {
+            close_to_follower = false;
+            break;
+          }
+        }
+        if (close_to_follower) {
+          traj_msg.points[0].time_from_start = rclcpp::Duration::from_seconds(0.02);
+          realtime_publisher->try_publish(traj_msg);
+          continue;
+        }
       }
 
       // Set time_from_start based on sync status and mean error

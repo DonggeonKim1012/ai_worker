@@ -136,6 +136,26 @@ joint_trajectory_command_broadcaster:
     default_value: -1.0,
     description: "Sign of the trigger joints. 1.0 for positive sign, -1.0 for negative sign."
   }
+  use_joystick_arm_toggles: {
+    type: bool,
+    default_value: false,
+    description: "Toggle left and right arm teleoperation independently with the matching joystick tact switches."
+  }
+  joystick_short_press_events: {
+    type: bool,
+    default_value: false,
+    description: "Use joystick_controller short-release events instead of raw button press edges. Long presses do not toggle arm teleoperation."
+  }
+  joystick_short_press_topic: {
+    type: string,
+    default_value: "/leader/joystick_controller/tact_trigger",
+    description: "Topic carrying left/right short-release and left_long_time/right_long_time events."
+  }
+  joystick_slow_start_duration: {
+    type: double,
+    default_value: 0.0,
+    description: "Optional per-arm startup ramp in seconds for joystick teleoperation; zero preserves legacy behavior."
+  }
   save_pose_duration: {
     type: double,
     default_value: 3.0,

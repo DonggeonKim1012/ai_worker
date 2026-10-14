@@ -1,0 +1,11 @@
+# Task-only controls. The standard ROBOTIS leader and joystick settings are unchanged.
+/**:
+  joint_trajectory_command_broadcaster:
+    ros__parameters:
+      use_joystick_arm_toggles: true
+      joystick_short_press_events: true
+      joystick_short_press_topic: /leader/joystick_controller/tact_trigger
+      joystick_slow_start_duration: 3.0
+  joystick_controller:
+    ros__parameters:
+      long_press_duration: 2.0

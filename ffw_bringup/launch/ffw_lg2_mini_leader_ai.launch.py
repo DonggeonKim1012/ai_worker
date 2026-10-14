@@ -17,12 +17,13 @@
 # Authors: Sungho Woo, Woojin Wie, Wonho Yun
 
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument, ExecuteProcess, GroupAction, RegisterEventHandler
-from launch.event_handlers import OnProcessExit
+from launch.actions import DeclareLaunchArgument, ExecuteProcess, GroupAction, RegisterEventHandler, LogInfo, OpaqueFunction
 from launch.conditions import IfCondition
+from launch.event_handlers import OnProcessExit
 from launch.substitutions import Command, FindExecutable, LaunchConfiguration, PathJoinSubstitution
 from launch_ros.actions import Node, PushRosNamespace
 from launch_ros.substitutions import FindPackageShare
+from launch_ros.parameter_descriptions import ParameterValue
 
 
 def generate_launch_description():
@@ -34,13 +35,23 @@ def generate_launch_description():
             description='URDF/XACRO file for the robot model.',
         ),
         DeclareLaunchArgument(
+            'launch_foot_switch',
+            default_value='false',
+            description='Whether to launch the foot switch node.',
+        ),
+        DeclareLaunchArgument(
             'controller_config',
             default_value='ffw_lg2_mini_leader_ai_hardware_controller.yaml',
             description='Controller config filename; use the _extended.yaml profile for recovered task controls.',
         ),
+        DeclareLaunchArgument(
+            'task_controller_config', default_value='',
+            description='Optional task-only controller parameter overlay.',
+        ),
     ]
 
     description_file = LaunchConfiguration('description_file')
+    launch_foot_switch = LaunchConfiguration('launch_foot_switch')
 
     # Robot controllers config file path
     robot_controllers = PathJoinSubstitution(
@@ -52,13 +63,20 @@ def generate_launch_description():
         ]
     )
 
-    # ros2_control Node
-    control_node = Node(
-        package='controller_manager',
-        executable='ros2_control_node',
-        parameters=[robot_controllers],
-        output='both',
-    )
+    endpose_config = PathJoinSubstitution([
+        FindPackageShare('ffw_bringup'), 'config', 'ffw_lg2_mini_leader', 'bgf_endpose.yaml'])
+
+    # The standard profile is unchanged unless a task overlay is explicitly selected.
+    def make_control_node(context):
+        parameters = [robot_controllers, endpose_config]
+        task_config = LaunchConfiguration('task_controller_config').perform(context)
+        if task_config:
+            parameters.append(PathJoinSubstitution([
+                FindPackageShare('ffw_bringup'), 'config', 'ffw_lg2_mini_leader', task_config]))
+        return [Node(package='controller_manager', executable='ros2_control_node',
+                     parameters=parameters, output='both')]
+
+    control_node = OpaqueFunction(function=make_control_node)
 
     robot_description_content = Command(
         [
@@ -69,16 +87,26 @@ def generate_launch_description():
             ),
         ]
     )
-    robot_description = {'robot_description': robot_description_content}
+    robot_description = {'robot_description': ParameterValue(robot_description_content, value_type=str)}
 
     robot_controller_spawner = Node(
         package='controller_manager',
         executable='spawner',
         arguments=[
-            'joint_trajectory_command_broadcaster',
+            # Disconnect joystick base commands, including recording randomization.
+            # Keep head/lift trajectories and navigation's /cmd_vel unchanged.
+            '--controller-ros-args',
+            '-r joystick_controller:/cmd_vel:=/leader/joystick_controller/disabled_cmd_vel',
+            # '--controller-ros-args',
+            # '-r /leader/joint_trajectory_command_broadcaster_left/joint_trajectory:='
+            # '/leader/joint_trajectory_command_broadcaster_left/raw_joint_trajectory',
+            # '--controller-ros-args',
+            # '-r /leader/joint_trajectory_command_broadcaster_right/joint_trajectory:='
+            # '/leader/joint_trajectory_command_broadcaster_right/raw_joint_trajectory',
+            'joint_state_broadcaster',
             'trigger_position_controller',
             'joystick_controller',
-            'joint_state_broadcaster',
+            'joint_trajectory_command_broadcaster',
         ],
         parameters=[robot_description],
     )
@@ -90,13 +118,61 @@ def generate_launch_description():
         parameters=[robot_description, {'frame_prefix': 'leader_'}],
     )
 
-    trigger_home = ExecuteProcess(cmd=[
-        'ros2', 'topic', 'pub', '--once',
-        '/leader/trigger_position_controller/commands',
-        'std_msgs/msg/Float64MultiArray', 'data: [0.0, 0.0]'])
-    home_after_controllers = RegisterEventHandler(OnProcessExit(
-        target_action=robot_controller_spawner,
-        on_exit=lambda event, context: [trigger_home] if event.returncode == 0 else []))
+    foot_switch_node = Node(
+        package='ffw_bringup',
+        executable='foot_switch_node',
+        name='foot_switch_node',
+        output='both',
+        parameters=[{'controller_config_path': robot_controllers}],
+        condition=IfCondition(launch_foot_switch),
+    )
+
+    # leader_feedback_node = Node(
+    #     package='ffw_joint_trajectory_command_broadcaster',
+    #     executable='leader_feedback',
+    #     name='leader_feedback',
+    #     output='both',
+    # )
+
+    hand_preset_node = Node(
+        package='ffw_teleop',
+        executable='hand_preset_bridge',
+        name='hand_preset_bridge',
+        output='both',
+        parameters=[{'config_file': PathJoinSubstitution([
+            FindPackageShare('ffw_bringup'), 'config', 'ffw_lg2_mini_leader',
+            'hand_preset_interpolator.yaml',
+        ]), 'endpose_file': PathJoinSubstitution([
+            FindPackageShare('ffw_bringup'), 'config', 'ffw_lg2_mini_leader',
+            'bgf_waypoint1_endpose.json',
+        ]), 'use_joint_states_trigger': True}],
+    )
+
+    # Execute process to publish position command
+    position_command_process = ExecuteProcess(
+        name='trigger_position_command',
+        cmd=[
+            'ros2', 'topic', 'pub',
+            '-r', '50',
+            '-t', '50',
+            '-p', '50',
+            '/leader/trigger_position_controller/commands',
+            'std_msgs/msg/Float64MultiArray',
+            'data: [0.0, 0.0]',
+        ],
+    )
+
+    # Note: leader_position_controller commands are now continuously published by
+    # joint_trajectory_command_broadcaster (mirrors follower poses every cycle).
+    # No initial-kick process needed.
+
+    delay_position_command_after_controllers = RegisterEventHandler(
+        event_handler=OnProcessExit(
+            target_action=robot_controller_spawner,
+            on_exit=lambda event, context: [position_command_process] if event.returncode == 0
+            else [LogInfo(msg='Leader controller startup failed; trigger homing skipped.')],
+        )
+    )
 
     # Wrap everything in a namespace 'leader'
     leader_with_namespace = GroupAction(
@@ -105,15 +181,16 @@ def generate_launch_description():
             control_node,
             robot_controller_spawner,
             robot_state_publisher_node,
-            home_after_controllers,
+            delay_position_command_after_controllers,
+            # leader_feedback_node,
+            hand_preset_node,
         ]
     )
 
     final_pose_node = Node(
         package='ffw_bringup', executable='sh5_final_pose', name='sh5_final_pose',
-        parameters=[PathJoinSubstitution([FindPackageShare('ffw_bringup'), 'config',
-                                        'ffw_lg2_mini_leader', 'bgf_endpose.yaml'])],
+        parameters=[endpose_config],
         condition=IfCondition(LaunchConfiguration('launch_final_pose')), output='screen')
 
-    # Return combined LaunchDescription
-    return LaunchDescription(declared_arguments + [leader_with_namespace, final_pose_node])
+    return LaunchDescription(declared_arguments + [
+        leader_with_namespace, foot_switch_node, final_pose_node])
