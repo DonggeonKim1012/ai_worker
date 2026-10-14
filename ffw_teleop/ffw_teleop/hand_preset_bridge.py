@@ -14,7 +14,6 @@ from rcl_interfaces.srv import SetParametersAtomically
 from sensor_msgs.msg import JointState
 from std_msgs.msg import Float64MultiArray, String, UInt8
 from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
-from std_srvs.srv import SetBool
 
 from ffw_teleop.hand_preset_model import PresetCatalog, normalize_trigger
 
@@ -32,8 +31,6 @@ class HandPresetBridge(Node):
         normalize_trigger(0.0, self.trigger_min, self.trigger_max)
         self.require_teleop_heartbeat = self.declare_parameter(
             'require_teleop_heartbeat', True).value
-        self.paused = False
-        self.create_service(SetBool, '/leader/hand_preset/pause', self.on_pause)
         self.ready = False
         self.teleop = {'left': (False, 0.0), 'right': (False, 0.0)}
         self.trigger = {'left': 0.0, 'right': 0.0}
@@ -98,14 +95,6 @@ class HandPresetBridge(Node):
         self.create_timer(0.5, self.publish_status)
         self.publish_status()
 
-    def on_pause(self, request, response):
-        self.paused = request.data
-        if self.paused:
-            self.save_motion.clear()
-        response.success = True
-        response.message = 'Preset output paused' if self.paused else 'Preset output resumed'
-        return response
-
     def on_description(self, message):
         try:
             robot = ET.fromstring(message.data)
@@ -162,8 +151,6 @@ class HandPresetBridge(Node):
         self.save_motion[hand] = (now, duration, start)
 
     def publish_endpose(self):
-        if self.paused:
-            return
         now = time.monotonic()
         for hand, (started, duration, start) in list(self.save_motion.items()):
             pose_id, received = self.save_state[hand]
@@ -187,7 +174,7 @@ class HandPresetBridge(Node):
 
     def on_trajectory(self, hand, message):
         enabled, received = self.teleop[hand]
-        if (self.paused or not self.ready or (self.require_teleop_heartbeat and
+        if (not self.ready or (self.require_teleop_heartbeat and
                 (not enabled or time.monotonic() - received > 0.5))
                 or self.save_state[hand][0] == 5):
             return

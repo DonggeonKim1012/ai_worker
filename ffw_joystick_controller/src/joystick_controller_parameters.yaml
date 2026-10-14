@@ -1,10 +1,4 @@
 joystick_controller:
-  final_pose_gesture_enabled: {
-    type: bool,
-    default_value: false,
-    description: "Publish raw normalized joystick values for final pose gestures without jogging head, lift, or base.",
-    read_only: true
-  }
   joystick_sensors: {
     type: string_array,
     default_value: [],
