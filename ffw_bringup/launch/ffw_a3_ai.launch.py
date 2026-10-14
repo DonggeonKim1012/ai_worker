@@ -17,7 +17,8 @@
 # Authors: Sungho Woo, Woojin Wie, Wonho Yun
 
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument, GroupAction
+from launch.actions import DeclareLaunchArgument, ExecuteProcess, GroupAction, RegisterEventHandler
+from launch.event_handlers import OnProcessExit
 from launch.conditions import IfCondition
 from launch.substitutions import Command, FindExecutable, LaunchConfiguration, PathJoinSubstitution
 from launch_ros.actions import Node, PushRosNamespace
@@ -26,34 +27,23 @@ from launch_ros.substitutions import FindPackageShare
 
 def generate_launch_description():
     declared_arguments = [
+        DeclareLaunchArgument('launch_final_pose', default_value='true'),
         DeclareLaunchArgument(
             'description_file',
-            default_value='ffw_a3.urdf.xacro',
+            default_value='ffw_lg2_mini_leader.urdf.xacro',
             description='URDF/XACRO file for the robot model.',
-        ),
-        DeclareLaunchArgument(
-            'use_mock_hardware',
-            default_value='false',
-            description='Use mock hardware mirroring command.',
-        ),
-        DeclareLaunchArgument(
-            'launch_foot_switch',
-            default_value='true',
-            description='Whether to launch the foot switch node.',
         ),
     ]
 
     description_file = LaunchConfiguration('description_file')
-    use_mock_hardware = LaunchConfiguration('use_mock_hardware')
-    launch_foot_switch = LaunchConfiguration('launch_foot_switch')
 
     # Robot controllers config file path
     robot_controllers = PathJoinSubstitution(
         [
             FindPackageShare('ffw_bringup'),
             'config',
-            'ffw_a3',
-            'ffw_a3_ai_hardware_controller.yaml',
+            'ffw_lg2_mini_leader',
+            'ffw_lg2_mini_leader_ai_hardware_controller.yaml',
         ]
     )
 
@@ -70,10 +60,8 @@ def generate_launch_description():
             PathJoinSubstitution([FindExecutable(name='xacro')]),
             ' ',
             PathJoinSubstitution(
-                [FindPackageShare('ffw_description'), 'urdf', 'ffw_a3', description_file]
+                [FindPackageShare('ffw_description'), 'urdf', 'ffw_lg2_mini_leader', description_file]
             ),
-            ' ',
-            'use_mock_hardware:=', use_mock_hardware,
         ]
     )
     robot_description = {'robot_description': robot_description_content}
@@ -83,7 +71,7 @@ def generate_launch_description():
         executable='spawner',
         arguments=[
             'joint_trajectory_command_broadcaster',
-            'spring_actuator_controller',
+            'trigger_position_controller',
             'joystick_controller',
             'joint_state_broadcaster',
         ],
@@ -97,22 +85,13 @@ def generate_launch_description():
         parameters=[robot_description, {'frame_prefix': 'leader_'}],
     )
 
-    foot_switch_node = Node(
-        package='ffw_bringup',
-        executable='foot_switch_node',
-        name='foot_switch_node',
-        output='both',
-        parameters=[{'controller_config_path': robot_controllers}],
-        condition=IfCondition(launch_foot_switch),
-    )
-
-    gripper_trigger_node = Node(
-        package='ffw_joint_trajectory_command_broadcaster',
-        executable='gripper_trigger',
-        name='gripper_trigger',
-        output='both',
-        parameters=[{'gripper_threshold': -0.5}],
-    )
+    trigger_home = ExecuteProcess(cmd=[
+        'ros2', 'topic', 'pub', '--once',
+        '/leader/trigger_position_controller/commands',
+        'std_msgs/msg/Float64MultiArray', 'data: [0.0, 0.0]'])
+    home_after_controllers = RegisterEventHandler(OnProcessExit(
+        target_action=robot_controller_spawner,
+        on_exit=lambda event, context: [trigger_home] if event.returncode == 0 else []))
 
     # Wrap everything in a namespace 'leader'
     leader_with_namespace = GroupAction(
@@ -121,9 +100,15 @@ def generate_launch_description():
             control_node,
             robot_controller_spawner,
             robot_state_publisher_node,
-            gripper_trigger_node,
+            home_after_controllers,
         ]
     )
 
+    final_pose_node = Node(
+        package='ffw_bringup', executable='sh5_final_pose', name='sh5_final_pose',
+        parameters=[PathJoinSubstitution([FindPackageShare('ffw_bringup'), 'config',
+                                        'ffw_lg2_mini_leader', 'bgf_endpose.yaml'])],
+        condition=IfCondition(LaunchConfiguration('launch_final_pose')), output='screen')
+
     # Return combined LaunchDescription
-    return LaunchDescription(declared_arguments + [leader_with_namespace, foot_switch_node])
+    return LaunchDescription(declared_arguments + [leader_with_namespace, final_pose_node])

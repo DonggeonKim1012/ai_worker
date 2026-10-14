@@ -37,7 +37,6 @@ generate_parameter_library(joystick_controller_parameters
 
 add_library(joystick_controller SHARED
   src/joystick_controller.cpp
-  src/joystick_controller_extended.cpp
 )
 target_compile_features(joystick_controller PUBLIC cxx_std_17)
 target_include_directories(joystick_controller PUBLIC

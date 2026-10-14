@@ -74,18 +74,6 @@ joystick_controller:
     description: "Topic to publish joint trajectory commands",
     read_only: true
   }
-  sensorxel_l_joy_joint_states_stamped_topic: {
-    type: string,
-    default_value: "",
-    description: "Topic to publish stamped joint states for the left joystick. If empty, derive from the joint trajectory topic.",
-    read_only: true
-  }
-  sensorxel_r_joy_joint_states_stamped_topic: {
-    type: string,
-    default_value: "",
-    description: "Topic to publish stamped joint states for the right joystick. If empty, derive from the joint trajectory topic.",
-    read_only: true
-  }
   sensorxel_l_joy_jog_scale: {
     type: double,
     default_value: 0.1,
@@ -110,86 +98,3 @@ joystick_controller:
     description: "Duration in seconds to trigger long press event",
     read_only: true
   }
-  enable_randomization: {
-    type: bool,
-    default_value: false,
-    description: "Enable random offsets on recording finish events",
-    read_only: false
-  }
-  action_event_topic: {
-    type: string,
-    default_value: "/task/action_event",
-    description: "Topic to receive recording action events",
-    read_only: true
-  }
-  head_random_range: {
-    type: double_array,
-    default_value: [-0.00, 0.00],
-    description: "Head joint random offset range",
-    read_only: true
-  }
-  lift_random_range: {
-    type: double_array,
-    default_value: [-0.02, 0.02],
-    description: "Lift joint random offset range",
-    read_only: true
-  }
-  cmd_vel_linear_x_random_range: {
-    type: double_array,
-    default_value: [-0.05, 0.05],
-    description: "cmd_vel linear.x random offset range",
-    read_only: true
-  }
-  cmd_vel_linear_y_random_range: {
-    type: double_array,
-    default_value: [-0.1, 0.1],
-    description: "cmd_vel linear.y random offset range",
-    read_only: true
-  }
-  cmd_vel_angular_z_random_range: {
-    type: double_array,
-    default_value: [-0.1, 0.1],
-    description: "cmd_vel angular.z random offset range",
-    read_only: true
-  }
-  random_duration: {
-    type: double,
-    default_value: 1.0,
-    description: "Seconds to interpolate joint offsets and pulse cmd_vel offsets",
-    read_only: true
-  }
-  up_save_pose_id:
-    type: int
-    default_value: 0
-    read_only: true
-    description: "0 disables gestures; 3..255 sends per-arm save pose on the configured stick axis"
-    validation:
-      bounds<>: [0, 255]
-  save_pose_axis_index:
-    type: int
-    default_value: 0
-    read_only: true
-    description: "Joystick axis for save-pose gesture: 0=X (vertical), 1=Y (horizontal)"
-    validation:
-      bounds<>: [0, 1]
-  left_save_pose_deadzone:
-    type: double
-    default_value: -1.0
-    read_only: true
-    description: "Left save-pose axis deadzone; negative uses the ordinary deadzone"
-    validation:
-      bounds<>: [-1.0, 0.99]
-  right_save_pose_deadzone:
-    type: double
-    default_value: 0.9
-    read_only: true
-    description: "Deadzone for the right save-pose gesture axis only"
-    validation:
-      bounds<>: [0.0, 0.99]
-  up_axis_sign:
-    type: double
-    default_value: 1.0
-    read_only: true
-    description: "Sign of the selected normalized gesture axis (+1 or -1)"
-    validation:
-      one_of<>: [[-1.0, 1.0]]

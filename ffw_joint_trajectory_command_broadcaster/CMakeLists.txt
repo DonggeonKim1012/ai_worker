@@ -15,20 +15,11 @@ set(THIS_PACKAGE_INCLUDE_DEPENDS
   controller_interface
   generate_parameter_library
   pluginlib
-  rclcpp
   rclcpp_lifecycle
   rcutils
   realtime_tools
-  sensor_msgs
-  std_msgs
-  std_srvs
-  dynamixel_interfaces
   urdf
   trajectory_msgs
-  geometry_msgs
-  tf2
-  tf2_ros
-  visualization_msgs
 )
 
 ################################################################################
@@ -46,7 +37,6 @@ generate_parameter_library(joint_trajectory_command_broadcaster_parameters
 
 add_library(joint_trajectory_command_broadcaster SHARED
   src/joint_trajectory_command_broadcaster.cpp
-  src/joint_trajectory_command_broadcaster_extended.cpp
 )
 target_compile_features(joint_trajectory_command_broadcaster PUBLIC cxx_std_17)
 target_include_directories(joint_trajectory_command_broadcaster PUBLIC
@@ -56,8 +46,6 @@ target_include_directories(joint_trajectory_command_broadcaster PUBLIC
 target_link_libraries(joint_trajectory_command_broadcaster PUBLIC
   ${builtin_interfaces_TARGETS}
   ${trajectory_msgs_TARGETS}
-  ${std_srvs_TARGETS}
-  ${dynamixel_interfaces_TARGETS}
   controller_interface::controller_interface
   joint_trajectory_command_broadcaster_parameters
   pluginlib::pluginlib
@@ -68,47 +56,6 @@ target_link_libraries(joint_trajectory_command_broadcaster PUBLIC
 # which is appropriate when building the dll but not consuming it.
 target_compile_definitions(joint_trajectory_command_broadcaster PRIVATE "JOINT_TRAJECTORY_COMMAND_BROADCASTER_BUILDING_DLL")
 pluginlib_export_plugin_description_file(controller_interface joint_trajectory_command_plugin.xml)
-
-################################################################################
-# leader_feedback standalone node
-################################################################################
-add_executable(leader_feedback src/leader_feedback.cpp)
-target_compile_features(leader_feedback PUBLIC cxx_std_17)
-ament_target_dependencies(leader_feedback
-  rclcpp
-  rcl_interfaces
-  sensor_msgs
-  std_msgs
-  dynamixel_interfaces
-)
-
-################################################################################
-# gripper_trigger standalone node
-################################################################################
-add_executable(gripper_trigger src/gripper_trigger.cpp)
-target_compile_features(gripper_trigger PUBLIC cxx_std_17)
-ament_target_dependencies(gripper_trigger
-  rclcpp
-  sensor_msgs
-  std_msgs
-)
-
-################################################################################
-# head_eef_tracker standalone node
-################################################################################
-add_executable(head_eef_tracker src/head_eef_tracker.cpp)
-target_compile_features(head_eef_tracker PUBLIC cxx_std_17)
-ament_target_dependencies(head_eef_tracker
-  rclcpp
-  geometry_msgs
-  sensor_msgs
-  std_msgs
-  tf2
-  tf2_ros
-  trajectory_msgs
-  urdf
-  visualization_msgs
-)
 
 ################################################################################
 # Install
@@ -126,11 +73,6 @@ install(
   RUNTIME DESTINATION bin
   ARCHIVE DESTINATION lib
   LIBRARY DESTINATION lib
-)
-
-install(
-  TARGETS leader_feedback gripper_trigger head_eef_tracker
-  DESTINATION lib/${PROJECT_NAME}
 )
 
 ################################################################################
