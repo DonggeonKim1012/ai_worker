@@ -82,16 +82,6 @@ const
   if (params_.use_joystick_arm_toggles && !params_.joystick_short_press_events) {
     state_interfaces_config.names.push_back("sensorxel_l_joy/JOYSTICK TACT SWITCH");
     state_interfaces_config.names.push_back("sensorxel_r_joy/JOYSTICK TACT SWITCH");
-  } else {
-    // Trigger inputs are required even when the follower arm command excludes grippers.
-    for (const auto * trigger_joint : {"gripper_l_joint1", "gripper_r_joint1"}) {
-      const std::string interface_name = std::string(trigger_joint) + "/" + HW_IF_POSITION;
-      if (std::find(state_interfaces_config.names.begin(), state_interfaces_config.names.end(),
-        interface_name) == state_interfaces_config.names.end())
-      {
-        state_interfaces_config.names.push_back(interface_name);
-      }
-    }
   }
   return state_interfaces_config;
 }

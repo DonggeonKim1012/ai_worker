@@ -2,10 +2,19 @@
 /**:
   joint_trajectory_command_broadcaster:
     ros__parameters:
+      # SH5 arm controllers have seven joints. Physical trigger joints belong
+      # to HandPresetBridge, not to the arm trajectory or its slow-start pose.
+      left_joints: [arm_l_joint1, arm_l_joint2, arm_l_joint3, arm_l_joint4, arm_l_joint5, arm_l_joint6, arm_l_joint7]
+      right_joints: [arm_r_joint1, arm_r_joint2, arm_r_joint3, arm_r_joint4, arm_r_joint5, arm_r_joint6, arm_r_joint7]
+      left_offsets: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+      right_offsets: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+      left_scales: [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
+      right_scales: [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
       use_joystick_arm_toggles: true
       joystick_short_press_events: true
       joystick_short_press_topic: /leader/joystick_controller/tact_trigger
       joystick_slow_start_duration: 3.0
   joystick_controller:
     ros__parameters:
+      final_pose_gesture_enabled: true
       long_press_duration: 2.0

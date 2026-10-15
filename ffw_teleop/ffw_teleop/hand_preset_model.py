@@ -144,6 +144,40 @@ class PresetCatalog:
             raise
 
     def status(self):
-        return dict(active=dict(self.active), presets=copy.deepcopy(list(self.presets.values())),
-                    deleted=[number for number, (_, stamp) in self.deleted.items()
-                             if time.monotonic() - stamp <= self.config['preset_delete_undo_sec']])
+        """Publish the Cyclo Hand Preset Studio contract without changing state.
+
+        The viewer renders the right-hand URDF, so all preview vectors use its
+        joint order. Keep the original catalog fields for existing subscribers.
+        """
+        presets = []
+        for number in sorted(self.presets):
+            preset = copy.deepcopy(self.presets[number])
+            if preset['builtin']:
+                delete_reason = 'Built-in presets cannot be deleted'
+            elif number in self.active.values():
+                delete_reason = 'Selected presets cannot be deleted'
+            else:
+                delete_reason = ''
+            preset.update(
+                custom=not preset['builtin'], editable=True,
+                deletable=not delete_reason, delete_reason=delete_reason,
+                preview_open_positions=self.positions('right', number, 0.0),
+                preview_positions=self.positions('right', number, 1.0),
+                editor_curls_exact=not preset['builtin'])
+            if not preset['builtin']:
+                preset['editor_curls'] = list(preset['curls'])
+            # Built-in poses need not lie on the custom editor's five curl
+            # axes. The UI derives an approximation from the preview vectors.
+            presets.append(preset)
+        return dict(
+            preset_ids=sorted(self.presets), enabled_sides=list(self.active),
+            left_preset_id=self.active['left'], right_preset_id=self.active['right'],
+            preview_joint_names=list(self.config['right_joint_names']),
+            custom_editor=dict(
+                control_labels=['Thumb', 'Index', 'Middle', 'Ring', 'Little'],
+                template_preset_id=self.template,
+                preview_open_positions=self.positions('right', self.template, 0.0),
+                preview_closed_positions=self.positions('right', self.template, 1.0)),
+            active=dict(self.active), presets=presets,
+            deleted=[number for number, (_, stamp) in self.deleted.items()
+                     if time.monotonic() - stamp <= self.config['preset_delete_undo_sec']])

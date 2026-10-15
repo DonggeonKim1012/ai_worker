@@ -1,0 +1,37 @@
+repositories:
+  DynamixelSDK:
+    type: git
+    url: https://github.com/ROBOTIS-GIT/DynamixelSDK.git
+    version: 516ae8632c593d7c84afd2bdee2a2fac965305cc
+  dynamixel_hardware_interface:
+    type: git
+    url: https://github.com/ROBOTIS-GIT/dynamixel_hardware_interface.git
+    version: 3375b3d0c99c5bcdab11b2dc15c89a2923e2bca2
+  dynamixel_interfaces:
+    type: git
+    url: https://github.com/ROBOTIS-GIT/dynamixel_interfaces.git
+    version: 3392e1214c62c7ee9e05ccc811e3e829c063bae8
+  robotis_interfaces:
+    type: git
+    url: https://github.com/ROBOTIS-GIT/robotis_interfaces.git
+    version: 7a5670cb3fb3f42b479a1fbf17c1e767b43db067
+  robotis_hand:
+    type: git
+    url: https://github.com/ROBOTIS-GIT/robotis_hand.git
+    version: d8399e606207e5dbf5beda0f433c435bac31ee1f
+  realsense-ros:
+    type: git
+    url: https://github.com/IntelRealSense/realsense-ros.git
+    version: cbd8b8487d4c0126bb590822db9469414496e62a
+  zed-ros2-wrapper:
+    type: git
+    url: https://github.com/stereolabs/zed-ros2-wrapper.git
+    version: 4c8ee060862c9a85d711d68b6a4f1571bfa3dcc9
+  dual_laser_merger:
+    type: git
+    url: https://github.com/ROBOTIS-GIT/dual_laser_merger.git
+    version: e354b5f289ae579422a3fcd0495df17fc5dc27ab
+  Lakibeam_ROS2_Driver:
+    type: git
+    url: https://github.com/ROBOTIS-GIT/Lakibeam_ROS2_Driver.git
+    version: 248a0cc4111e613bd9975e287371d58a3c3a3b0d

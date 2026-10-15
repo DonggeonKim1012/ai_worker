@@ -20,7 +20,7 @@ from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument, ExecuteProcess, GroupAction, RegisterEventHandler, LogInfo, OpaqueFunction
 from launch.conditions import IfCondition
 from launch.event_handlers import OnProcessExit
-from launch.substitutions import Command, FindExecutable, LaunchConfiguration, PathJoinSubstitution
+from launch.substitutions import Command, FindExecutable, LaunchConfiguration, PathJoinSubstitution, PythonExpression
 from launch_ros.actions import Node, PushRosNamespace
 from launch_ros.substitutions import FindPackageShare
 from launch_ros.parameter_descriptions import ParameterValue
@@ -28,7 +28,12 @@ from launch_ros.parameter_descriptions import ParameterValue
 
 def generate_launch_description():
     declared_arguments = [
-        DeclareLaunchArgument('launch_final_pose', default_value='true'),
+        DeclareLaunchArgument('launch_final_pose', default_value='false'),
+        DeclareLaunchArgument('enable_sh5_recording_controls', default_value='false',
+                              choices=['true', 'false'],
+                              description='Opt in to LG2 mini + SH5 recording and hand controls.'),
+        DeclareLaunchArgument('follower_type', default_value='',
+                              description='Set ffw_sh5_rev1 for the SH5 recording profile.'),
         DeclareLaunchArgument(
             'description_file',
             default_value='ffw_lg2_mini_leader.urdf.xacro',
@@ -68,8 +73,23 @@ def generate_launch_description():
 
     # The standard profile is unchanged unless a task overlay is explicitly selected.
     def make_control_node(context):
-        parameters = [robot_controllers, endpose_config]
+        enabled = LaunchConfiguration('enable_sh5_recording_controls').perform(context) == 'true'
+        follower = LaunchConfiguration('follower_type').perform(context)
         task_config = LaunchConfiguration('task_controller_config').perform(context)
+        if enabled and (follower != 'ffw_sh5_rev1' or
+                        description_file.perform(context) != 'ffw_lg2_mini_leader.urdf.xacro'):
+            raise RuntimeError('SH5 recording controls require LG2 mini leader and follower_type:=ffw_sh5_rev1')
+        if task_config == 'lg2_recording_controls.yaml' and not enabled:
+            raise RuntimeError('Use ffw_lg2_mini_leader_recording.launch.py for the SH5 recording profile')
+        if LaunchConfiguration('launch_final_pose').perform(context) == 'true' and not enabled:
+            raise RuntimeError('SH5 final pose requires enable_sh5_recording_controls:=true')
+        if enabled:
+            if task_config not in ('', 'lg2_recording_controls.yaml'):
+                raise RuntimeError('SH5 recording controls require lg2_recording_controls.yaml')
+            task_config = 'lg2_recording_controls.yaml'
+        parameters = [robot_controllers]
+        if enabled:
+            parameters.append(endpose_config)
         if task_config:
             parameters.append(PathJoinSubstitution([
                 FindPackageShare('ffw_bringup'), 'config', 'ffw_lg2_mini_leader', task_config]))
@@ -93,10 +113,12 @@ def generate_launch_description():
         package='controller_manager',
         executable='spawner',
         arguments=[
-            # Disconnect joystick base commands, including recording randomization.
-            # Keep head/lift trajectories and navigation's /cmd_vel unchanged.
+            # Only the opt-in SH5 profile disconnects joystick base commands.
             '--controller-ros-args',
-            '-r joystick_controller:/cmd_vel:=/leader/joystick_controller/disabled_cmd_vel',
+            ['-r joystick_controller:/cmd_vel:=', PythonExpression([
+                "'/leader/joystick_controller/disabled_cmd_vel' if '",
+                LaunchConfiguration('enable_sh5_recording_controls'),
+                "' == 'true' else '/cmd_vel'"])],
             # '--controller-ros-args',
             # '-r /leader/joint_trajectory_command_broadcaster_left/joint_trajectory:='
             # '/leader/joint_trajectory_command_broadcaster_left/raw_joint_trajectory',
@@ -139,13 +161,15 @@ def generate_launch_description():
         executable='hand_preset_bridge',
         name='hand_preset_bridge',
         output='both',
+        condition=IfCondition(LaunchConfiguration('enable_sh5_recording_controls')),
         parameters=[{'config_file': PathJoinSubstitution([
             FindPackageShare('ffw_bringup'), 'config', 'ffw_lg2_mini_leader',
             'hand_preset_interpolator.yaml',
         ]), 'endpose_file': PathJoinSubstitution([
             FindPackageShare('ffw_bringup'), 'config', 'ffw_lg2_mini_leader',
             'bgf_waypoint1_endpose.json',
-        ]), 'use_joint_states_trigger': True}],
+        ]), 'use_joint_states_trigger': True,
+            'control_profile': 'lg2_mini_sh5_recording'}],
     )
 
     # Execute process to publish position command
@@ -190,7 +214,9 @@ def generate_launch_description():
     final_pose_node = Node(
         package='ffw_bringup', executable='sh5_final_pose', name='sh5_final_pose',
         parameters=[endpose_config],
-        condition=IfCondition(LaunchConfiguration('launch_final_pose')), output='screen')
+        condition=IfCondition(PythonExpression([
+            "'", LaunchConfiguration('enable_sh5_recording_controls'), "' == 'true' and '",
+            LaunchConfiguration('launch_final_pose'), "' == 'true'"])), output='screen')
 
     return LaunchDescription(declared_arguments + [
         leader_with_namespace, foot_switch_node, final_pose_node])

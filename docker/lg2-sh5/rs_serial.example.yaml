@@ -1,0 +1,4 @@
+# This example belongs to the SH5 used on 2026-10-15. Verify before reusing.
+# The inner quotes are required: RealSense serials must remain strings.
+camera1_serial: "'335122271364'"
+camera2_serial: "'335122273200'"

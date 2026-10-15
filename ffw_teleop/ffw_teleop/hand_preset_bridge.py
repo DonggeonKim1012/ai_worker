@@ -30,6 +30,20 @@ class HandPresetBridge(Node):
         self.trigger_min = float(self.declare_parameter('trigger_min', -0.1).value)
         self.trigger_max = float(self.declare_parameter('trigger_max', 1.1).value)
         normalize_trigger(0.0, self.trigger_min, self.trigger_max)
+        self.use_joint_states_trigger = self.declare_parameter(
+            'use_joint_states_trigger', False).value
+        self.control_profile = self.declare_parameter('control_profile', '').value
+        if self.control_profile not in ('', 'lg2_mini_sh5_recording'):
+            raise ValueError('Unsupported hand control profile')
+        self.raw_trigger_ranges = {}
+        self.trigger_deadband = float(self.catalog.config['trigger_open_deadband_alpha'])
+        if not math.isfinite(self.trigger_deadband) or not 0.0 <= self.trigger_deadband < 1.0:
+            raise ValueError('Trigger deadband must be finite and in [0, 1)')
+        for hand in ('left', 'right'):
+            opened = float(self.catalog.config[f'{hand}_trigger_open'])
+            closed = float(self.catalog.config[f'{hand}_trigger_closed'])
+            normalize_trigger(opened, opened, closed)
+            self.raw_trigger_ranges[hand] = (opened, closed)
         self.require_teleop_heartbeat = self.declare_parameter(
             'require_teleop_heartbeat', True).value
         self.paused = False
@@ -84,9 +98,13 @@ class HandPresetBridge(Node):
                 Float64MultiArray, self.catalog.config[f'{hand}_effort_command_topic'], 1)
             self.create_subscription(UInt8, f'/leader/{hand}_teleop_state',
                 partial(self.on_teleop, hand), 1)
-            self.create_subscription(JointTrajectory,
-                f'/leader/joint_trajectory_command_broadcaster_{hand}/joint_trajectory',
-                partial(self.on_trajectory, hand), 1)
+            if not self.use_joint_states_trigger:
+                self.create_subscription(JointTrajectory,
+                    f'/leader/joint_trajectory_command_broadcaster_{hand}/joint_trajectory',
+                    partial(self.on_trajectory, hand), 1)
+        if self.use_joint_states_trigger:
+            self.create_subscription(JointState, self.catalog.config['joint_states_topic'],
+                                     self.on_leader_joint_states, 1)
         self.feedback = self.create_publisher(JointState, '/topic_based_joint_states', 1)
         self.create_subscription(JointState, '/topic_based_joint_commands', self.on_virtual_command, 1)
         latched = QoSProfile(depth=1, durability=DurabilityPolicy.TRANSIENT_LOCAL)
@@ -185,6 +203,28 @@ class HandPresetBridge(Node):
     def on_teleop(self, hand, message):
         self.teleop[hand] = (message.data == 1, time.monotonic())
 
+    def on_leader_joint_states(self, message):
+        # SH5 has finger_* joints, not the mini leader's gripper_* trigger
+        # joints. Keep those inputs separate from the seven-joint arm command.
+        if (len(message.name) != len(message.position) or
+                len(set(message.name)) != len(message.name) or
+                not all(math.isfinite(value) for value in message.position)):
+            return
+        values = dict(zip(message.name, message.position))
+        for hand in ('left', 'right'):
+            joint = self.catalog.config[f'{hand}_trigger_joint']
+            if joint not in values:
+                continue
+            amount = normalize_trigger(values[joint], *self.raw_trigger_ranges[hand])
+            if amount <= self.trigger_deadband:
+                amount = 0.0
+            calibrated = self.trigger_min + amount * (self.trigger_max - self.trigger_min)
+            # Reuse the same readiness, pause, heartbeat, save-pose and current
+            # limit checks as the legacy calibrated trajectory input.
+            self.on_trajectory(hand, JointTrajectory(
+                joint_names=[f"gripper_{'l' if hand == 'left' else 'r'}_joint1"],
+                points=[JointTrajectoryPoint(positions=[calibrated])]))
+
     def on_trajectory(self, hand, message):
         enabled, received = self.teleop[hand]
         if (self.paused or not self.ready or (self.require_teleop_heartbeat and
@@ -264,6 +304,7 @@ class HandPresetBridge(Node):
 
     def publish_status(self):
         payload = self.catalog.status()
+        payload['control_profile'] = self.control_profile
         payload['follower_ready'] = self.ready
         payload['trigger_values'] = self.trigger
         payload['teleop_enabled'] = {hand: enabled and time.monotonic() - received <= 0.5
