@@ -1,4 +1,27 @@
 joystick_controller:
+  task_vertical_motion:
+    type: bool
+    default_value: false
+    read_only: true
+    description: "Opt-in task mapping: left vertical drives forward/back, right vertical jogs SH5 lift; no head, lateral or yaw output."
+  task_base_speed:
+    type: double
+    default_value: 0.1
+    read_only: true
+    validation:
+      bounds<>: [0.0, 0.2]
+  task_lift_speed:
+    type: double
+    default_value: 0.03
+    read_only: true
+    validation:
+      bounds<>: [0.0, 0.05]
+  allow_task_final_pose: {
+    type: bool,
+    default_value: false,
+    description: "Opt-in SH5 only: reserve joystick axes when the follower enables a task final pose.",
+    read_only: true
+  }
   final_pose_gesture_enabled: {
     type: bool,
     default_value: false,
@@ -112,7 +135,7 @@ joystick_controller:
   }
   long_press_duration: {
     type: double,
-    default_value: 2.0,
+    default_value: 0.5,
     description: "Duration in seconds to trigger long press event",
     read_only: true
   }

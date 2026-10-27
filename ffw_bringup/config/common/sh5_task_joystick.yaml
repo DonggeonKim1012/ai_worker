@@ -1,0 +1,5 @@
+# Loaded only for the explicit A3 -> SH5 mode. No task means no gesture feature.
+/**:
+  joystick_controller:
+    ros__parameters:
+      allow_task_final_pose: true

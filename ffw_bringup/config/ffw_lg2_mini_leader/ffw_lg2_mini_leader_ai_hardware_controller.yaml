@@ -148,7 +148,7 @@
       left_save_pose_deadzone: 0.7
       right_save_pose_deadzone: 0.7
       up_axis_sign: 1.0
-      long_press_duration: 2.0
+      long_press_duration: 0.5
   trigger_position_controller:
     ros__parameters:
       joints:

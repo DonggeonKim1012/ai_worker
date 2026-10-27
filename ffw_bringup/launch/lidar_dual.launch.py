@@ -94,12 +94,12 @@ def generate_launch_description():
     )
     declare_scan_range_start_cmd = DeclareLaunchArgument(
         'scan_range_start',
-        default_value='"45"',
+        default_value='"50"',
         description='Scan range start angle (45~315)'
     )
     declare_scan_range_stop_cmd = DeclareLaunchArgument(
         'scan_range_stop',
-        default_value='"315"',
+        default_value='"310"',
         description='Scan range stop angle (45~315, must be greater than start)'
     )
     declare_sensorip0_cmd = DeclareLaunchArgument(

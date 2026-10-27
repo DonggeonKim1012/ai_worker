@@ -1,0 +1,11 @@
+# Explicit A3 + SH5 + task_name:=Task_000911 only. X is the physical vertical axis.
+# Left X is reversed by the existing A3 calibration: -X = forward.
+# Right X retains the existing lift sign: +X = up (toward joint position 0).
+/**:
+  joystick_controller:
+    ros__parameters:
+      task_vertical_motion: true
+      task_base_speed: 0.1  # m/s at full deflection
+      task_lift_speed: 0.03 # m/s at full deflection
+      deadzone: 0.15
+      enable_randomization: false

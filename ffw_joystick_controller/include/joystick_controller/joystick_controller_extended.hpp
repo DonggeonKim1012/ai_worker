@@ -97,7 +97,7 @@ protected:
 
   // Helper methods for better code organization
   double normalize_joystick_value(double raw_adc, bool is_tact_switch, double deadzone_value) const;
-  std::vector<double> read_and_normalize_sensor_values(size_t sensor_idx) const;
+  std::vector<double> read_and_normalize_sensor_values(size_t sensor_idx, bool task_axes = false) const;
   void update_joystick_values(
     const std::string & sensor_name,
     const std::vector<double> & normalized_values,
@@ -112,8 +112,10 @@ protected:
   void publish_joint_trajectory(
     const std::vector<std::string> & controlled_joints,
     const std::vector<double> & positions,
-    const std::string & sensor_name);
+    const std::string & sensor_name,
+    bool recording_hold = false);
   void publish_cmd_vel(const JoystickValues & joystick_values, double random_scale);
+  void publish_task_motion(const JoystickValues & values, double period_seconds);
   void publish_joystick_values();
   void handle_tact_switches(
     bool left_tact_pressed, bool right_tact_pressed, const rclcpp::Time & current_time);
@@ -135,6 +137,10 @@ protected:
   std::map<std::string, bool> up_armed_;
   bool was_active_ = false;  // Track previous sensorxel_joy state
   bool has_joint_states_ = false;  // Track if joint states have been received
+  std::atomic<int64_t> task_feedback_ns_{0};
+  bool task_motion_armed_ = false;
+  bool task_lift_active_ = false;
+  double task_lift_target_ = 0.0;
 
   std::map<std::string, std::vector<std::string>> sensor_controlled_joints_;
   std::map<std::string, std::vector<std::string>> sensor_reverse_interfaces_;
@@ -150,6 +156,9 @@ protected:
   std::map<std::string, double> sensor_jog_scale_;
 
   rclcpp::Subscription<sensor_msgs::msg::JointState>::SharedPtr joint_states_subscriber_;
+  rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr task_pose_subscriber_;
+  rclcpp::Publisher<std_msgs::msg::Float64MultiArray>::SharedPtr task_axes_publisher_;
+  std::atomic_bool task_pose_enabled_{false};
 
   std::shared_ptr<ParamListener> param_listener_;
   Params params_;

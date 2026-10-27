@@ -1,0 +1,36 @@
+AD runtime source recovery — 2026-10-27 (Asia/Seoul)
+
+Upstream: DonggeonKim1012/ai_worker lg2-recording-controls-20261014
+Upstream commit: 14bc0a0ee96948c1e4f32b47dff40747fdd235a3
+Branch: recovery/ad-runtime-20261027
+Container: ai_worker_full_real_20261015
+Source: /full/runtime-update/src/ai_worker
+Previous host source: backup/host-before-ad-sync-20261027 (2212bd60191f5a9fb7de1ab03967e82e254b61cd)
+
+Source files are copied from the running container. The four installed
+launch/configuration versions below replace their corresponding source files
+so the recovered tree preserves the installed runtime settings.
+
+ffw_bringup/config/common/rs_serial.yaml
+  <- /full/runtime-update/install/ffw_bringup/share/ffw_bringup/config/common/rs_serial.yaml
+
+ffw_bringup/config/tasks/Task_000802.yaml
+  <- /full/runtime-update/install/ffw_bringup/share/ffw_bringup/config/tasks/Task_000802.yaml
+
+ffw_bringup/launch/lidar_dual.launch.py
+  <- /full/runtime-update/install/ffw_bringup/share/ffw_bringup/launch/lidar_dual.launch.py
+
+ffw_description/ros2_control/ffw_sh5_rev1_follower/ffw_sh5_follower.ros2_control.xacro
+  <- /full/runtime-update/install/ffw_description/share/ffw_description/ros2_control/ffw_sh5_rev1_follower/ffw_sh5_follower.ros2_control.xacro
+
+Verification scope:
+- Compared 351 corresponding installed share files; four current configuration/
+  launch files differ (plus two old .before backup copies, excluded).
+- Compared 18 installed Python modules with source: no content differences.
+- .before-* copies, caches and build outputs are not part of the recovered tree.
+- Host-only source files are retained in the backup commit rather than mixed
+  into the runtime snapshot. Existing ignored backup files are left on disk.
+- This is source preservation, not a rebuild or process-memory checkpoint.
+  Compiled C++ binaries, /full/ros_ws dependencies, device setup, images and bind
+  mounts still require the existing deployment backups for full recreation.
+- No running container was modified or restarted by this synchronization.

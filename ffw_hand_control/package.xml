@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>ffw_hand_control</name><version>0.1.0</version>
+  <description>Opt-in SH5 C++ arm routing, hand interpolation and command ownership.</description>
+  <maintainer email="dgk1012dgk@gmail.com">DonggeonKim1012</maintainer>
+  <license>Apache-2.0</license>
+  <buildtool_depend>ament_cmake</buildtool_depend>
+  <depend>rclcpp</depend><depend>std_msgs</depend><depend>std_srvs</depend>
+  <depend>sensor_msgs</depend><depend>trajectory_msgs</depend>
+  <depend>rcl_interfaces</depend><depend>urdf</depend><depend>nlohmann_json</depend>
+  <export><build_type>ament_cmake</build_type></export>
+</package>

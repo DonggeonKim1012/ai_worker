@@ -16,5 +16,6 @@
       joystick_slow_start_duration: 3.0
   joystick_controller:
     ros__parameters:
-      final_pose_gesture_enabled: true
-      long_press_duration: 2.0
+      final_pose_gesture_enabled: false
+      allow_task_final_pose: true
+      long_press_duration: 0.5

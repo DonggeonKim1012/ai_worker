@@ -1,4 +1,4 @@
-"""Task 650 reverse approach and shared raised final pose."""
+"""Separate SH5 lowering path and explicitly selected task final poses."""
 import json
 import math
 from pathlib import Path
@@ -31,13 +31,50 @@ def load_plan(config_dir, endpose_file):
             reverse=[list(params[step]) for step in reversed(steps)], steps=list(reversed(steps)))
     if groups['arm_l']['steps'] != groups['arm_r']['steps']:
         raise ValueError('Arm approach steps must match')
-    phases = [('final_pose', {g: groups[g]['final'] for g in GROUPS})]
-    for index, step in enumerate(groups['arm_l']['steps']):
-        phases.append((step, {g: groups[g]['reverse'][index] if g.startswith('arm')
-                             else groups[g]['reverse'][0] for g in GROUPS}))
+    # Preserve BOTH original retraction/clearance waypoints in reverse approach
+    # order. Do not deduplicate step1 even if it is close to task_start in YAML.
+    # Only the separate raised task final pose is excluded from bringdown.
+    phases = [('task_start', {g: groups[g]['reverse'][0] for g in GROUPS})]
+    for step in ('step1', 'step0'):
+        waypoint = {}
+        for g in GROUPS:
+            if g.startswith('arm'):
+                if step not in groups[g]['steps']:
+                    raise ValueError(f'Bringdown requires the {step} waypoint')
+                waypoint[g] = groups[g]['reverse'][groups[g]['steps'].index(step)]
+            else:
+                waypoint[g] = groups[g]['reverse'][0]
+        phases.append((step, waypoint))
     phases.append(('arms_down', {g: [0.0]*7 if g.startswith('arm')
                                else groups[g]['reverse'][0] for g in GROUPS}))
     return groups, phases
+
+
+def load_task_final_pose(task_name, tasks_dir, groups):
+    if not task_name:
+        return None, None
+    # Explicit allow-list through config files; no arbitrary path traversal.
+    if not task_name.replace('_', '').isalnum():
+        raise ValueError('Invalid task_name')
+    root = Path(tasks_dir).resolve()
+    document = yaml.safe_load((root / (task_name + '.yaml')).read_text())
+    if document.get('robot_type') != 'ffw_sh5_rev1':
+        raise ValueError('Task final pose must target SH5')
+    if document.get('final_pose_enabled', True) is False:
+        return None, None
+    if 'final_pose' in document:
+        pose = document['final_pose']
+    else:
+        source = (root / document['final_pose_file']).resolve()
+        if not source.is_relative_to(root.parent):
+            raise ValueError('Task pose file must be inside the bringup config directory')
+        pose = json.loads(source.read_text())
+    if pose.get('robot_type') != 'ffw_sh5_rev1':
+        raise ValueError('Invalid final-pose robot type')
+    targets = {g: [pose['joints'][n] for n in groups[g]['names']] for g in GROUPS}
+    if any(type(v) not in (int, float) or not math.isfinite(v) for values in targets.values() for v in values):
+        raise ValueError('Invalid task final-pose values')
+    return targets, document['gesture']
 
 
 def motion_duration(start, end, speed=.25):

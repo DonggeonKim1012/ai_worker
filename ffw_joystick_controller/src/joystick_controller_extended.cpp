@@ -98,7 +98,7 @@ double JoystickControllerExtended::normalize_joystick_value(
   return normalized_value;
 }
 
-std::vector<double> JoystickControllerExtended::read_and_normalize_sensor_values(size_t sensor_idx) const
+std::vector<double> JoystickControllerExtended::read_and_normalize_sensor_values(size_t sensor_idx, bool task_axes) const
 {
   std::vector<double> normalized_values(state_interface_types_.size(), 0.0);
 
@@ -129,7 +129,8 @@ std::vector<double> JoystickControllerExtended::read_and_normalize_sensor_values
     {
       deadzone = params_.left_save_pose_deadzone;
     }
-    double normalized_value = normalize_joystick_value(raw_adc, is_tact_switch, deadzone);
+    // Task gestures have their own deadzone; A3's ordinary jog deadzone is 1.0.
+    double normalized_value = normalize_joystick_value(raw_adc, is_tact_switch, task_axes ? 0.15 : deadzone);
 
     // Apply reverse if needed
     const auto & interface_name = state_interface_types_[j];
@@ -227,10 +228,14 @@ std::vector<double> JoystickControllerExtended::calculate_joint_positions(
 void JoystickControllerExtended::publish_joint_trajectory(
   const std::vector<std::string> & controlled_joints,
   const std::vector<double> & positions,
-  const std::string & sensor_name)
+  const std::string & sensor_name,
+  bool recording_hold)
 {
   auto trajectory_msg = trajectory_msgs::msg::JointTrajectory();
   trajectory_msg.header.stamp = rclcpp::Time(0);
+  if (recording_hold) {
+    trajectory_msg.header.frame_id = "ffw_recording_hold";
+  }
   trajectory_msg.joint_names = controlled_joints;
 
   trajectory_msgs::msg::JointTrajectoryPoint point;
@@ -379,6 +384,58 @@ void JoystickControllerExtended::publish_joystick_values()
   }
 }
 
+void JoystickControllerExtended::publish_task_motion(
+  const JoystickValues & values, double period_seconds)
+{
+  // Only the explicitly selected task enters this path. Keep the legacy mapping intact.
+  const auto now_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(
+    std::chrono::steady_clock::now().time_since_epoch()).count();
+  const auto feedback_age = now_ns - task_feedback_ns_.load();
+  const auto it = std::find(current_joint_states_.name.begin(),
+    current_joint_states_.name.end(), "lift_joint");
+  const auto index = static_cast<size_t>(std::distance(current_joint_states_.name.begin(), it));
+  const bool valid = feedback_age >= 0 && feedback_age < 500000000 &&
+    it != current_joint_states_.name.end() &&
+    index < current_joint_states_.position.size() &&
+    std::isfinite(current_joint_states_.position[index]) &&
+    current_joint_states_.position[index] >= -0.5 && current_joint_states_.position[index] <= 0.0 &&
+    std::isfinite(values.left_x) && std::isfinite(values.right_x) &&
+    std::isfinite(period_seconds) && period_seconds > 0.0 && period_seconds <= 0.05;
+  geometry_msgs::msg::Twist twist;
+  if (!valid) {
+    task_motion_armed_ = false;
+    task_lift_active_ = false;
+    cmd_vel_pub_->publish(twist);
+    return;
+  }
+  // Require neutral after startup or stale feedback; do not resume a held stick.
+  if (!task_motion_armed_) {
+    task_motion_armed_ = values.left_x == 0.0 && values.right_x == 0.0;
+    cmd_vel_pub_->publish(twist);
+    return;
+  }
+  twist.linear.x = -std::clamp(values.left_x, -1.0, 1.0) * params_.task_base_speed;
+  cmd_vel_pub_->publish(twist);
+  const bool lift_active = values.right_x != 0.0;
+  if (lift_active || task_lift_active_) {
+    const double measured = current_joint_states_.position[index];
+    // Integrate the target, not the measured position: a tiny one-cycle offset
+    // cannot overcome the physical drive's position deadband. Limit outstanding
+    // travel to 5 mm; never wind up a large target while blocked or lagging.
+    // Release or reversal starts at measured position, including after UI jogs.
+    if (!task_lift_active_ || !lift_active ||
+      (task_lift_target_ - measured) * values.right_x < 0.0)
+    {
+      task_lift_target_ = measured;
+    }
+    task_lift_target_ = std::clamp(std::clamp(task_lift_target_ +
+      std::clamp(values.right_x, -1.0, 1.0) * params_.task_lift_speed * period_seconds,
+      measured - 0.005, measured + 0.005), -0.5, 0.0);
+    publish_joint_trajectory({"lift_joint"}, {task_lift_target_}, constants::RIGHT_JOYSTICK_NAME);
+  }
+  task_lift_active_ = lift_active;
+}
+
 void JoystickControllerExtended::handle_tact_switches(
   bool left_tact_pressed, bool right_tact_pressed, const rclcpp::Time & current_time)
 {
@@ -512,6 +569,8 @@ void JoystickControllerExtended::joint_states_callback(const sensor_msgs::msg::J
 {
   // Store current joint states
   current_joint_states_ = *msg;
+  task_feedback_ns_.store(std::chrono::duration_cast<std::chrono::nanoseconds>(
+    std::chrono::steady_clock::now().time_since_epoch()).count());
 
   // initialize last_active_positions_ by sensor
   if (!has_joint_states_) {
@@ -535,7 +594,7 @@ void JoystickControllerExtended::joint_states_callback(const sensor_msgs::msg::J
 }
 
 controller_interface::return_type JoystickControllerExtended::update(
-  const rclcpp::Time & time, const rclcpp::Duration & /*period*/)
+  const rclcpp::Time & time, const rclcpp::Duration & period)
 {
   if (!has_joint_states_) {
     return controller_interface::return_type::OK;
@@ -563,6 +622,37 @@ controller_interface::return_type JoystickControllerExtended::update(
   const double active_random_scale = params_.enable_randomization ? random_scale(time) : 0.0;
 
   JoystickValues joystick_values;
+  const bool task_pose = params_.allow_task_final_pose && task_pose_enabled_.load();
+  // The dataset still needs head/lift action samples when a task repurposes
+  // the sticks as gestures. Mark these measured-position no-ops so the
+  // follower mux records them without forwarding them to the motors.
+  const auto publish_recording_hold = [this](
+    const std::vector<std::string> & joints, const std::string & sensor) {
+      const auto now_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(
+        std::chrono::steady_clock::now().time_since_epoch()).count();
+      const auto age_ns = now_ns - task_feedback_ns_.load();
+      if (age_ns < 0 || age_ns > 500000000 || joints.empty()) {
+        return;
+      }
+      std::vector<double> positions;
+      positions.reserve(joints.size());
+      for (const auto & joint : joints) {
+        const auto it = std::find(
+          current_joint_states_.name.begin(), current_joint_states_.name.end(), joint);
+        if (it == current_joint_states_.name.end()) {
+          return;
+        }
+        const auto index = static_cast<size_t>(
+          std::distance(current_joint_states_.name.begin(), it));
+        if (index >= current_joint_states_.position.size() ||
+          !std::isfinite(current_joint_states_.position[index])) {
+          return;
+        }
+        positions.push_back(current_joint_states_.position[index]);
+      }
+      publish_joint_trajectory(joints, positions, sensor, true);
+    };
+  std_msgs::msg::Float64MultiArray task_axes;
   bool left_tact_switch_pressed = false;
   bool right_tact_switch_pressed = false;
 
@@ -576,6 +666,10 @@ controller_interface::return_type JoystickControllerExtended::update(
 
     // Read all joystick interfaces.
     std::vector<double> normalized_values = read_and_normalize_sensor_values(sensor_idx);
+    if (task_pose) {
+      auto axes = read_and_normalize_sensor_values(sensor_idx, true);
+      task_axes.data.insert(task_axes.data.end(), axes.begin(), axes.end());
+    }
 
     // Motion activity only depends on joystick axes, not the tact switch state.
     bool any_sensorxel_joy_active = false;
@@ -593,8 +687,15 @@ controller_interface::return_type JoystickControllerExtended::update(
     update_joystick_values(sensor_name, normalized_values, joystick_values,
                           left_tact_switch_pressed, right_tact_switch_pressed);
 
+    if (params_.task_vertical_motion) {
+      // Preserve button events and the independent horizontal final-pose axes.
+      publish_recording_hold(controlled_joints, sensor_name);
+      sensorxel_joy_values_[sensor_idx] = normalized_values;
+      continue;
+    }
+
     const auto gesture_axis = static_cast<size_t>(params_.save_pose_axis_index);
-    if (params_.up_save_pose_id >= 3 && normalized_values.size() > gesture_axis) {
+    if (!task_pose && params_.up_save_pose_id >= 3 && normalized_values.size() > gesture_axis) {
       const double gesture = normalized_values[gesture_axis] * params_.up_axis_sign;
       // Require neutral after startup and between gestures. Holding fires once.
       if (std::abs(gesture) < 0.2) {
@@ -638,7 +739,7 @@ controller_interface::return_type JoystickControllerExtended::update(
     }
 
     // Publish joint trajectory
-    if (!params_.final_pose_gesture_enabled && !current_joint_states_.name.empty() &&
+    if (!task_pose && !params_.final_pose_gesture_enabled && !current_joint_states_.name.empty() &&
       !controlled_joints.empty())
     {
       std::vector<double> positions;
@@ -657,6 +758,8 @@ controller_interface::return_type JoystickControllerExtended::update(
         apply_random_joint_offsets(positions, sensor_name);
       }
       publish_joint_trajectory(controlled_joints, positions, sensor_name);
+    } else {
+      publish_recording_hold(controlled_joints, sensor_name);
     }
 
     was_active_ = trajectory_joy_active;
@@ -664,7 +767,9 @@ controller_interface::return_type JoystickControllerExtended::update(
   }
 
   // Publish cmd_vel
-  if (params_.final_pose_gesture_enabled) {
+  if (params_.task_vertical_motion) {
+    publish_task_motion(joystick_values, period.seconds());
+  } else if (task_pose || params_.final_pose_gesture_enabled) {
     publish_cmd_vel(JoystickValues{}, 0.0);
   } else {
     publish_cmd_vel(joystick_values, active_random_scale);
@@ -672,6 +777,7 @@ controller_interface::return_type JoystickControllerExtended::update(
 
   // Publish joystick values
   publish_joystick_values();
+  if (task_pose) task_axes_publisher_->publish(task_axes);
 
   handle_tact_switches(left_tact_switch_pressed, right_tact_switch_pressed, time);
 
@@ -787,6 +893,13 @@ controller_interface::CallbackReturn JoystickControllerExtended::on_configure(
   }
 
   // Create publisher for sensorxel_joy values (common topic)
+  task_axes_publisher_ = get_node()->create_publisher<std_msgs::msg::Float64MultiArray>(
+    "~/final_pose_axes", rclcpp::QoS(1));
+  if (params_.allow_task_final_pose) {
+    task_pose_subscriber_ = get_node()->create_subscription<std_msgs::msg::Bool>(
+      "/ffw/final_pose/enabled", rclcpp::QoS(1).transient_local(),
+      [this](std_msgs::msg::Bool::ConstSharedPtr msg) {task_pose_enabled_.store(msg->data);});
+  }
   sensorxel_joy_publisher_["common"] =
     get_node()->create_publisher<std_msgs::msg::Float64MultiArray>(
     "~/sensorxel_joy_values", rclcpp::SystemDefaultsQoS());
@@ -850,6 +963,8 @@ controller_interface::CallbackReturn JoystickControllerExtended::on_activate(
   const rclcpp_lifecycle::State & /*previous_state*/)
 {
   auto logger = get_node()->get_logger();
+  task_motion_armed_ = false;
+  task_lift_active_ = false;
 
   param_listener_->refresh_dynamic_parameters();
   params_ = param_listener_->get_params();

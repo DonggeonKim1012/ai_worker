@@ -17,6 +17,13 @@
 # Authors: Sungho Woo, Woojin Wie, Wonho Yun
 
 from launch import LaunchDescription
+import atexit
+import tempfile
+from pathlib import Path
+import yaml
+from ament_index_python.packages import get_package_share_directory
+from launch.actions import SetLaunchConfiguration
+from ffw_bringup.follower_task_state import task_initial_pose
 from launch.actions import DeclareLaunchArgument
 from launch.actions import ExecuteProcess
 from launch.actions import IncludeLaunchDescription
@@ -30,12 +37,32 @@ from launch.substitutions import Command
 from launch.substitutions import FindExecutable
 from launch.substitutions import LaunchConfiguration
 from launch.substitutions import PathJoinSubstitution
+from launch.substitutions import PythonExpression
 from launch_ros.actions import Node
 from launch_ros.substitutions import FindPackageShare
+from launch.actions import OpaqueFunction
+from ffw_bringup.launch_shutdown import shutdown_when_requested
 
 
 def generate_launch_description():
     declared_arguments = [
+        DeclareLaunchArgument('upper_body_teleop_mux', default_value='false',
+                              choices=['true', 'false'],
+                              description='Opt-in A3 priority over Cyclo head/lift UI jog.'),
+        DeclareLaunchArgument('mobile_teleop_mux', default_value='false',
+                              choices=['true', 'false'],
+                              description='Opt-in A3/navigation priority over Cyclo mobile teleop.'),
+        DeclareLaunchArgument('task_name', default_value='',
+                              description='Optional task config basename, e.g. Task_000650. Empty disables final pose.'),
+        DeclareLaunchArgument('launch_bringdown', default_value='true',
+                              choices=['true', 'false'],
+                              description='Start the passive SH5 final-pose/bringdown receiver.'),
+        DeclareLaunchArgument('bringdown_shutdown_mode', default_value='auto',
+                              choices=['auto', 's6', 'launch'],
+                              description='Use s6 when present, otherwise stop the managed launches.'),
+        DeclareLaunchArgument('bringdown_control_hands', default_value='false',
+                              choices=['true', 'false'],
+                              description='Bringdown defaults to arms only: no finger targets or finger arrival checks. Does not change final pose.'),
         DeclareLaunchArgument('start_rviz', default_value='false',
                               description='Whether to execute rviz2'),
         DeclareLaunchArgument('use_sim', default_value='false',
@@ -127,6 +154,10 @@ def generate_launch_description():
         package='controller_manager',
         executable='ros2_control_node',
         parameters=[robot_description, controller_manager_config],
+        remappings=[('/cmd_vel', PythonExpression([
+            "'/ffw/mobile/cmd_vel' if '", LaunchConfiguration('mobile_teleop_mux'),
+            "' == 'true' else '/cmd_vel'"
+        ]))],
         output='both',
         condition=UnlessCondition(use_sim),
     )
@@ -177,11 +208,15 @@ def generate_launch_description():
             '-r /hand_r_controller/joint_trajectory:='
             '/leader/joint_trajectory_command_broadcaster_right_hand/joint_trajectory',
             '--controller-ros-args',
-            '-r /head_controller/joint_trajectory:='
-            '/leader/joystick_controller_left/joint_trajectory',
+            PythonExpression(["'-r /head_controller/joint_trajectory:=' + ",
+                              "('/ffw/ui_priority/head/joint_trajectory' if '",
+                              LaunchConfiguration('upper_body_teleop_mux'),
+                              "' == 'true' else '/leader/joystick_controller_left/joint_trajectory')"]),
             '--controller-ros-args',
-            '-r /lift_controller/joint_trajectory:='
-            '/leader/joystick_controller_right/joint_trajectory',
+            PythonExpression(["'-r /lift_controller/joint_trajectory:=' + ",
+                              "('/ffw/ui_priority/lift/joint_trajectory' if '",
+                              LaunchConfiguration('upper_body_teleop_mux'),
+                              "' == 'true' else '/leader/joystick_controller_right/joint_trajectory')"]),
             'arm_l_controller',
             'arm_r_controller',
             'head_controller',
@@ -214,22 +249,22 @@ def generate_launch_description():
         output='screen',
     )
 
-    # Spawner for swerve_drive_controller
-    swerve_drive_spawner = Node(
-        package='controller_manager',
-        executable='spawner',
-        arguments=['swerve_drive_controller'],
-        parameters=[robot_description],
-        output='screen',
-    )
+    # Match the low-speed A3 profile only for this explicit task. Legacy
+    # deployments retain their existing base deadband and speed limits.
+    def spawn_task_base(context):
+        arguments = ['swerve_drive_controller']
+        if LaunchConfiguration('task_name').perform(context) == 'Task_000911':
+            arguments += ['--param-file', PathJoinSubstitution([
+                FindPackageShare('ffw_bringup'), 'config', 'ffw_sh5_rev1_follower',
+                'Task_000911_base_controller.yaml']).perform(context)]
+        return [Node(package='controller_manager', executable='spawner',
+                     arguments=arguments, parameters=[robot_description], output='screen')]
+
+    swerve_drive_spawner = OpaqueFunction(function=spawn_task_base)
 
     # Direct spawner for swerve_drive_controller when init_position is false
-    swerve_drive_spawner_direct = Node(
-        package='controller_manager',
-        executable='spawner',
-        arguments=['swerve_drive_controller'],
-        parameters=[robot_description],
-        output='screen',
+    swerve_drive_spawner_direct = OpaqueFunction(
+        function=spawn_task_base,
         condition=UnlessCondition(init_position),
     )
 
@@ -294,12 +329,25 @@ def generate_launch_description():
         )
     )
 
-    trajectory_params_file = PathJoinSubstitution([
-        FindPackageShare('ffw_bringup'),
-        'config',
-        model,
-        init_position_file,
-    ])
+    def configure_initial_pose(context):
+        root = Path(get_package_share_directory('ffw_bringup')) / 'config'
+        task = LaunchConfiguration('task_name').perform(context)
+        requested = init_position_file.perform(context)
+        if task in ('Task_000802', 'Task_000857', 'Task_000862') and requested == 'ffw_sh5_follower_initial_positions.yaml':
+            document = task_initial_pose(root, task)
+            with tempfile.NamedTemporaryFile(mode='w', prefix=f'{task}_init_',
+                                             suffix='.yaml', delete=False) as handle:
+                yaml.safe_dump(document, handle, sort_keys=False)
+                path = Path(handle.name)
+            atexit.register(lambda: path.unlink(missing_ok=True))
+        else:
+            path = root / model.perform(context) / requested
+        return [SetLaunchConfiguration('resolved_initial_pose_file', str(path))]
+
+    trajectory_params_file = LaunchConfiguration('resolved_initial_pose_file')
+    task_state_node = Node(package='ffw_bringup', executable='follower_task_state',
+        parameters=[{'task_name': LaunchConfiguration('task_name'),
+                     'initial_pose_file': trajectory_params_file}], output='screen')
 
     joint_trajectory_executor_left = Node(
         package='ffw_bringup',
@@ -459,8 +507,27 @@ def generate_launch_description():
         condition=IfCondition(LaunchConfiguration('enable_collision_avoidance')),
     )
 
+    bringdown_node = Node(
+        package='ffw_bringup', executable='sh5_bringdown', name='sh5_final_pose',
+        condition=IfCondition(LaunchConfiguration('launch_bringdown')),
+        parameters=[{'shutdown_mode': LaunchConfiguration('bringdown_shutdown_mode'),
+                     'bringdown_control_hands': LaunchConfiguration('bringdown_control_hands'),
+                     'require_leader_manager': False,
+                     'require_init_profile': True,
+                     'task_name': LaunchConfiguration('task_name')}], output='screen')
+
     return LaunchDescription(
         declared_arguments + [
+            OpaqueFunction(function=configure_initial_pose),
+            task_state_node,
+            Node(package='ffw_bringup', executable='upper_body_teleop_mux',
+                 condition=IfCondition(LaunchConfiguration('upper_body_teleop_mux')),
+                 output='screen'),
+            Node(package='ffw_bringup', executable='mobile_teleop_mux',
+                 condition=IfCondition(LaunchConfiguration('mobile_teleop_mux')),
+                 output='screen'),
+            bringdown_node,
+            shutdown_when_requested(bringdown_node),
             control_node,
             robot_state_pub_node,
             joint_state_broadcaster_spawner,

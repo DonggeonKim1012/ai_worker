@@ -24,6 +24,7 @@ from launch.substitutions import Command, FindExecutable, LaunchConfiguration, P
 from launch_ros.actions import Node, PushRosNamespace
 from launch_ros.substitutions import FindPackageShare
 from launch_ros.parameter_descriptions import ParameterValue
+from ffw_bringup.launch_shutdown import leader_shutdown_actions
 
 
 def generate_launch_description():
@@ -119,6 +120,14 @@ def generate_launch_description():
                 "'/leader/joystick_controller/disabled_cmd_vel' if '",
                 LaunchConfiguration('enable_sh5_recording_controls'),
                 "' == 'true' else '/cmd_vel'"])],
+            '--controller-ros-args',
+            ['-r /leader/joint_trajectory_command_broadcaster_left/joint_trajectory:=', PythonExpression([
+                "'/leader/sh5_raw/left/joint_trajectory' if '", LaunchConfiguration('enable_sh5_recording_controls'),
+                "' == 'true' else '/leader/joint_trajectory_command_broadcaster_left/joint_trajectory'"])],
+            '--controller-ros-args',
+            ['-r /leader/joint_trajectory_command_broadcaster_right/joint_trajectory:=', PythonExpression([
+                "'/leader/sh5_raw/right/joint_trajectory' if '", LaunchConfiguration('enable_sh5_recording_controls'),
+                "' == 'true' else '/leader/joint_trajectory_command_broadcaster_right/joint_trajectory'"])],
             # '--controller-ros-args',
             # '-r /leader/joint_trajectory_command_broadcaster_left/joint_trajectory:='
             # '/leader/joint_trajectory_command_broadcaster_left/raw_joint_trajectory',
@@ -158,17 +167,14 @@ def generate_launch_description():
 
     hand_preset_node = Node(
         package='ffw_teleop',
-        executable='hand_preset_bridge',
+        executable='hand_preset_catalog',
         name='hand_preset_bridge',
         output='both',
         condition=IfCondition(LaunchConfiguration('enable_sh5_recording_controls')),
         parameters=[{'config_file': PathJoinSubstitution([
             FindPackageShare('ffw_bringup'), 'config', 'ffw_lg2_mini_leader',
             'hand_preset_interpolator.yaml',
-        ]), 'endpose_file': PathJoinSubstitution([
-            FindPackageShare('ffw_bringup'), 'config', 'ffw_lg2_mini_leader',
-            'bgf_waypoint1_endpose.json',
-        ]), 'use_joint_states_trigger': True,
+        ]),
             'control_profile': 'lg2_mini_sh5_recording'}],
     )
 
@@ -208,6 +214,11 @@ def generate_launch_description():
             delay_position_command_after_controllers,
             # leader_feedback_node,
             hand_preset_node,
+            Node(package='ffw_hand_control', executable='hand_control_bridge',
+                 condition=IfCondition(LaunchConfiguration('enable_sh5_recording_controls')),
+                 parameters=[{'control_profile': 'lg2_mini_sh5_recording',
+                     'left_trajectory_topic': '/leader/sh5_raw/left/joint_trajectory',
+                     'right_trajectory_topic': '/leader/sh5_raw/right/joint_trajectory'}], output='screen'),
         ]
     )
 
@@ -219,4 +230,5 @@ def generate_launch_description():
             LaunchConfiguration('launch_final_pose'), "' == 'true'"])), output='screen')
 
     return LaunchDescription(declared_arguments + [
-        leader_with_namespace, foot_switch_node, final_pose_node])
+        leader_with_namespace, foot_switch_node, final_pose_node] +
+        leader_shutdown_actions(IfCondition(LaunchConfiguration('enable_sh5_recording_controls'))))

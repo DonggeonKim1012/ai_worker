@@ -131,6 +131,8 @@
 /**:
   swerve_drive_controller:
     ros__parameters:
+      linear_vel_deadband: 0.01
+      angular_vel_deadband: 0.01
       steering_joint_names: ["left_wheel_steer", "right_wheel_steer", "rear_wheel_steer"]
 
       wheel_joint_names: ["left_wheel_drive", "right_wheel_drive", "rear_wheel_drive"]

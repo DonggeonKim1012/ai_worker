@@ -18,8 +18,10 @@
 
 import math
 import sys
+import time
 
 from control_msgs.action import FollowJointTrajectory
+from action_msgs.msg import GoalStatus
 import numpy as np
 import rclpy
 from rclpy.action import ActionClient
@@ -41,6 +43,11 @@ class JointTrajectoryExecutor(Node):
         self.declare_parameter('duration', 10.0)
         self.declare_parameter('position_tolerance', 0.01)
         self.declare_parameter('velocity_tolerance', 0.01)
+        # Opt-in bounded measured-state settling after an action has succeeded.
+        # A running action is never treated as complete by this timeout.
+        self.completion_timeout = float(self.declare_parameter('completion_timeout', 0.0).value)
+        if not math.isfinite(self.completion_timeout) or self.completion_timeout < 0:
+            raise ValueError('completion_timeout must be finite and nonnegative')
         self.declare_parameter(
             'action_topic', '/arm_controller/follow_joint_trajectory'
         )
@@ -103,6 +110,10 @@ class JointTrajectoryExecutor(Node):
         self.reached_target = False
         self.num_points = 100  # Number of points for smooth trajectory
         self.goal_handle = None
+        self.goal_pending = False
+        self.action_succeeded = False
+        self.settle_deadline = None
+        self.create_timer(0.2, self.check_settle_timeout)
         self.last_status_time = 0.0
         self.status_interval = 1.0  # Log status every second
         self.current_step = 0
@@ -133,13 +144,37 @@ class JointTrajectoryExecutor(Node):
         self.get_logger().debug(f'Feedback: {feedback.actual.positions}')
 
     def goal_response_callback(self, future):
+        self.goal_pending = False
         goal_handle = future.result()
         if not goal_handle.accepted:
-            self.get_logger().info('Goal rejected :(')
-            return
+            self.get_logger().error('Initialization goal rejected')
+            self.shutdown_node(exit_code=1)
 
         self.get_logger().info('Goal accepted :)')
         self.goal_handle = goal_handle
+        if self.completion_timeout > 0:
+            goal_handle.get_result_async().add_done_callback(
+                lambda result: self.goal_result_callback(goal_handle, result))
+
+    def goal_result_callback(self, handle, future):
+        if handle is not self.goal_handle:
+            return  # Result from an earlier step must not affect the current one.
+        result = future.result()
+        if (result.status != GoalStatus.STATUS_SUCCEEDED or
+                result.result.error_code != FollowJointTrajectory.Result.SUCCESSFUL):
+            self.get_logger().error(f'Initialization action failed: {result.result.error_string}')
+            self.goal_handle = None  # The action is already terminal.
+            self.shutdown_node(exit_code=1)
+        self.action_succeeded = True
+        self.settle_deadline = time.monotonic() + self.completion_timeout
+
+    def check_settle_timeout(self):
+        if self.settle_deadline is not None and time.monotonic() >= self.settle_deadline:
+            self.get_logger().error(
+                'Action succeeded, but measured initialization tolerance was not met; '
+                'exiting with failure instead of waiting indefinitely')
+            self.goal_handle = None  # Deadline is armed only for a succeeded action.
+            self.shutdown_node(exit_code=1)
 
     def joint_state_callback(self, msg):
         if set(self.joint_names).issubset(set(msg.name)):
@@ -151,7 +186,7 @@ class JointTrajectoryExecutor(Node):
             ]
 
             # Check if current step has reached its target
-            if self.goal_handle is None:
+            if self.goal_handle is None and not self.goal_pending:
                 if self.current_step < len(self.positions_list):
                     target_positions = self.get_step_target_positions()
                     self.get_logger().info(
@@ -169,6 +204,8 @@ class JointTrajectoryExecutor(Node):
                     goal_msg.goal_time_tolerance.nanosec = 0
 
                     self.get_logger().info('Sending goal...')
+                    self.action_succeeded = False
+                    self.goal_pending = True
                     self._send_goal_future = self.action_client.send_goal_async(
                         goal_msg, feedback_callback=self.feedback_callback
                     )
@@ -177,11 +214,14 @@ class JointTrajectoryExecutor(Node):
                     )
 
             # Check if current step has reached its target
-            if self.check_step_completion():
+            if (not self.goal_pending and self.goal_handle is not None
+                    and (self.completion_timeout == 0 or self.action_succeeded)
+                    and self.check_step_completion()):
                 if not self.reached_target:
                     self.reached_target = True
                     self.get_logger().info(f'🎯 Step {self.current_step} completed!')
                     self.goal_handle = None
+                    self.settle_deadline = None
                     self.current_step += 1
                     self.reached_target = False
 
@@ -190,12 +230,12 @@ class JointTrajectoryExecutor(Node):
                         self.shutdown_node()
                         return
 
-    def shutdown_node(self):
+    def shutdown_node(self, exit_code=0):
         if self.goal_handle:
             self.goal_handle.cancel_goal_async()
         self.destroy_node()
         rclpy.shutdown()
-        sys.exit(0)
+        sys.exit(exit_code)
 
     def angle_to_radian(self, angle):
         return angle * math.pi / 180

@@ -15,11 +15,14 @@
   <author email="wwj@robotis.com">Woojin Wie</author>
   <author email="ywh@robotis.com">Wonho Yun</author>
   <depend>rclpy</depend>
+  <exec_depend>geometry_msgs</exec_depend>
+  <exec_depend>nav_msgs</exec_depend>
   <depend>dynamixel_hardware_interface</depend>
   <depend>ros_gz_bridge</depend>
   <depend>ros_gz_sim</depend>
   <depend>ros_gz_image</depend>
   <exec_depend>ffw_description</exec_depend>
+  <exec_depend>ffw_hand_control</exec_depend>
   <exec_depend>ffw_robot_state_publisher</exec_depend>
   <exec_depend>robotis_hand_pressure_broadcaster</exec_depend>
   <exec_depend>collision_avoidance</exec_depend>

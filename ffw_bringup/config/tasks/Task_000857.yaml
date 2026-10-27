@@ -1,0 +1,78 @@
+robot_type: ffw_sh5_rev1
+final_pose_enabled: true
+initial_pose:
+  base_file: ffw_sh5_rev1_follower/ffw_sh5_follower_initial_positions_Task_000857.yaml
+  overrides: {}
+final_pose:
+  robot_type: ffw_sh5_rev1
+  joints:
+    arm_l_joint1: -0.07055113201783414
+    arm_l_joint2: 0.0
+    arm_l_joint3: -0.1043106935762236
+    arm_l_joint4: -2.6077553551806845
+    arm_l_joint5: -0.20708740636456155
+    arm_l_joint6: 1.092949327143614
+    arm_l_joint7: -0.11963391678707207
+    arm_r_joint1: -0.09357282806102411
+    arm_r_joint2: -0.0506093817753208
+    arm_r_joint3: 0.07207312858081442
+    arm_r_joint4: -2.5816896660115343
+    arm_r_joint5: 0.0828109940960139
+    arm_r_joint6: 1.0515198616457964
+    arm_r_joint7: 0.06672070521253583
+    finger_l_joint1: -0.6626797003668039
+    finger_l_joint10: 1.2946797849752745
+    finger_l_joint11: 0.5951845456994218
+    finger_l_joint12: 0.6902913545483318
+    finger_l_joint13: 0.03681553890904832
+    finger_l_joint14: 1.1796312258838508
+    finger_l_joint15: 0.6181942575177066
+    finger_l_joint16: 0.7439806821243291
+    finger_l_joint17: 0.09203884727293143
+    finger_l_joint18: 0.9909515889739176
+    finger_l_joint19: 0.6320000846086771
+    finger_l_joint2: 1.4986992297640649
+    finger_l_joint20: 0.8697671067309516
+    finger_l_joint3: -1.116738013580954
+    finger_l_joint4: -0.22242721424362477
+    finger_l_joint5: -0.1503301172129996
+    finger_l_joint6: 1.194971033762708
+    finger_l_joint7: 0.6289321230329059
+    finger_l_joint8: 0.7700583555183851
+    finger_l_joint9: -0.07056311624294631
+    finger_r_joint1: 0.66267970036639
+    finger_r_joint10: 1.2870098810358463
+    finger_r_joint11: 0.5706408530932516
+    finger_r_joint12: 0.66267970036639
+    finger_r_joint13: -0.039883500485233814
+    finger_r_joint14: 1.1903690913990506
+    finger_r_joint15: 0.6135923151540497
+    finger_r_joint16: 0.7271068934575871
+    finger_r_joint17: -0.1165825398795155
+    finger_r_joint18: 0.9924855697618025
+    finger_r_joint19: 0.6227961998813636
+    finger_r_joint2: -1.5079031144917923
+    finger_r_joint20: 0.8820389530340371
+    finger_r_joint3: 1.11673801358054
+    finger_r_joint4: 0.2316310989705248
+    finger_r_joint5: 0.15646604036412848
+    finger_r_joint6: 1.1934370529748222
+    finger_r_joint7: 0.636602026972334
+    finger_r_joint8: 0.7700583555183851
+    finger_r_joint9: 0.07516505860618938
+gesture:
+  left_axis_index: 1
+  right_axis_index: 4
+  left_axis_sign: 1.0
+  right_axis_sign: 1.0
+  gesture_threshold: 0.7
+  neutral_threshold: 0.2
+  gesture_hold_sec: 1.0
+a3_joystick:
+  allow_task_final_pose: true
+  final_pose_gesture_enabled: true
+  task_vertical_motion: false
+  enable_randomization: false
+  long_press_duration: 0.5
+teleop_resume:
+  duration: 2.0

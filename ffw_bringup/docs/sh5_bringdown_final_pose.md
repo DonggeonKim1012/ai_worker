@@ -1,65 +1,61 @@
-# SH5 bringdown and mini-leader final pose
+# SH5 bringdown and opt-in task final pose
 
-`ros2 launch ffw_bringup ffw_lg2_mini_leader_ai.launch.py` starts the recovered
-physical mini-leader model, controllers, and the final-pose/bringdown receiver.
-Its joystick configuration reserves the axes for pose gestures instead of
-head/lift/base jogging. Alternatively, use an existing leader and run
-`ros2 launch ffw_bringup sh5_final_pose.launch.py` independently. Use only one
-receiver; `launch_final_pose:=false` disables the receiver in the mini launch.
-
-After each stick has been neutral, push the **left stick left** for 0.3 seconds
-to move only the left arm and fingers; push the **right stick right** to move
-only the right arm and fingers. Held sticks fire once. Both sides can be
-selected in the same gesture sample. While an operation is running, another
-request is rejected with status; return to neutral and retry after completion.
-The recovered left-Y reversal maps physical left to positive normalized Y;
-both outward gesture signs are therefore +1. Axis indices/signs and thresholds are configurable in `bgf_endpose.yaml`.
-
-The reconstructed `bgf_waypoint1_endpose.json` uses Task 650's released finger
-positions (small recorded offsets outside URDF limits bounded to the joint limits;
-original values are recorded in the JSON) and arm targets `[-0.9, 0, 0, -1.8, 0, 0.9, 0]` rad on both sides.
-Compared with Task 650's first reverse waypoint, shoulder flexion raises the
-elbow and folded forearm brings the hands in front of the head. URDF forward
-kinematics places the wrist about 0.492 m forward and 0.077 m above the arm
-base (±0.228 m laterally); the fingers extend above the wrist. These are newly
-constructed targets, not recovered recorded poses. Joint limits and interpolation
-were checked; the physical eye alignment and swept collision path have not
-been tested on hardware. Adjust the JSON targets after reviewing the pose.
-
-To request bringdown:
+The follower launch starts one bringdown receiver by default. Do not start a
+second receiver from the leader. `launch_bringdown:=false` explicitly disables it.
 
 ```bash
+ros2 launch ffw_bringup ffw_sh5_follower_ai.launch.py init_position:=true launch_cameras:=true
 ros2 service call /ffw/bringdown std_srvs/srv/Trigger '{}'
 ```
 
-Order: measured current pose → raised final pose → Task 650 `task_start` →
-`step1` → `step0` → `arms_down` (all seven arm joints zero, straight downward).
-Hands retain Task 650's released finger target after the first phase. Head and
-lift retain their measured controller targets. Each phase uses quintic position
-samples at a configured maximum 0.25 rad/s, FollowJointTrajectory actions,
-and fresh per-joint measurements; no phase advances without measured settling.
-Hand goal settling and each waypoint's measured confirmation allow **60 seconds**;
-arm goal settling allows 20 seconds. Tolerances are not widened. Missing/stale
-feedback, goal rejection, or timeout cancels accepted goals and prevents later
-shutdown steps.
+Bringdown always follows **measured current state → task_start → step1 → step0
+→ arms_down**. Both original retraction/folding steps are preserved exactly from
+`config/ffw_sh5_rev1_follower/ffw_sh5_follower_initial_positions_Task_000650.yaml`.
+Only the separate raised final pose is excluded. Do not remove step1 because it
+is numerically close to task_start. By default, bringdown commands and verifies
+**arms only** (`bringdown_control_hands:=false`). It sends no finger trajectory
+or finger-current command and does not wait for finger feedback/action servers.
+Existing hand-controller holding targets and head/lift targets are not changed.
+This does not repair a faulty finger or make a grasped object safe to lower:
+check hand/object clearance before requesting the arm sequence.
 
-Before movement the receiver pauses the preset bridge (if present) and
-deactivates the leader arm trajectory broadcaster, preventing competing hand
-or arm commands. After final pose, these producers remain paused so returning
-the stick to neutral cannot jump the arms back to the leader pose. Re-enable
-teleoperation explicitly when ready. Current limits of 600 mA are sent for each
-selected hand before its action goal; this is a current limit, not forced current.
+For a healthy hand, `bringdown_control_hands:=true` explicitly restores the old
+released-hand targets and their checks. Neither setting changes task final pose.
+Action results AND fresh measured arm settling remain required before advancing;
+failure cancels accepted goals and does not continue shutdown. New settings take
+effect after restarting the receiver/follower, not in an already running process.
 
-Only after the final downward pose is confirmed does bringdown deactivate all
-active leader/follower controllers. It then stops the s6 navigation service,
-the follower service (which terminates its controller manager and launch
-process), and finally the avatar service. Service names are configurable with
-`shutdown_services`; default names match the current container. Missing required
-supervisor services are rejected before movement. This does not stop the Docker
-container or Cyclo manager. Launching the receiver independently keeps it alive
-to report final status; if it is inside the avatar supervisor, stopping avatar
-also stops the receiver as the last shutdown step.
+Bringdown globally pauses the hand bridge and disables competing leader command
+controllers. After the final downward pose is confirmed it disables controllers
+and stops services (s6 deployment) or its own parent launch (standalone deployment).
+It is not emergency stop, and it cannot operate through disconnected/failed motors.
+Do not use it while initialization is still actively controlling the joints.
 
-The reconstructed Task 650 startup file is installed and can be selected with
-`init_position_file:=ffw_sh5_follower_initial_positions_Task_000650.yaml` on the
-existing follower launch. Bringdown always uses this explicit profile.
+## Final pose is a separate, disabled-by-default feature
+
+```bash
+ros2 launch ffw_bringup ffw_sh5_follower_ai.launch.py task_name:=Task_000650
+# Single-board A3, explicitly paired with SH5:
+ros2 launch ffw_bringup ffw_a3_ai.launch.py robot_type:=sh5 port_name:=/dev/left_leader
+# Or the opt-in two-board LG2 profile:
+ros2 launch ffw_bringup ffw_lg2_mini_leader_recording.launch.py launch_final_pose:=false
+```
+
+Without `task_name`, final-pose services reject requests and joystick axes retain
+normal behavior. With an approved task, neutral first, then left stick outward
+left / right stick outward right for 0.3 seconds selects that side's arm and hand.
+`config/tasks/Task_000650.yaml` references the operator-approved existing
+`bgf_waypoint1_endpose.json`. New tasks add their own YAML; unknown task names fail.
+The JSON targets are not newly measured eye-height coordinates. Verify physical
+axis signs and clearance after changing leader boards before testing motion.
+
+The selected side is held by the C++ bridge while the opposite side stays available.
+After success, deliberately disable and re-enable that side's teleop to resume.
+No controller shutdown or bringdown sequence occurs. A failed move leaves that
+side held. Both gestures in one sample select both sides; a new request while a
+move is busy is rejected, requiring neutral and retry.
+
+Task selection does not change initialization. `init_position_file` remains the
+separate explicit startup-trajectory option. Neither new pose path was physically
+executed during the 2026-10-15 timing/mapping checks; those used init_position=false
+with teleop inactive. Software checks are not swept-volume collision validation.

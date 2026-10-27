@@ -21,6 +21,7 @@ setup(
             ['resource/' + package_name]),
         ('share/' + package_name, ['package.xml']),
         ('share/' + package_name + '/launch', glob('launch/*.launch.py')),
+        ('share/' + package_name + '/config/tasks', glob('config/tasks/*.yaml')),
         (os.path.join('share', package_name, 'config/ffw_bg2_rev2_follower'),
          glob('config/ffw_bg2_rev2_follower/*')),
         (os.path.join('share', package_name, 'config/ffw_bg2_rev3_follower'),
@@ -68,10 +69,15 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
+            'follower_task_state = ffw_bringup.follower_task_state:main',
+            'task_selection = ffw_bringup.task_selection:main',
+            'mobile_teleop_mux = ffw_bringup.mobile_teleop_mux:main',
+            'upper_body_teleop_mux = ffw_bringup.upper_body_teleop_mux:main',
             'joint_trajectory_executor = ffw_bringup.joint_trajectory_executor:main',
             'head_eef_tracker = ffw_bringup.head_eef_tracker:main',
             'sh5_bringdown = ffw_bringup.sh5_bringdown:main',
             'sh5_final_pose = ffw_bringup.sh5_bringdown:main',
+            'launch_stop_receiver = ffw_bringup.launch_stop_receiver:main',
         ],
     },
 )

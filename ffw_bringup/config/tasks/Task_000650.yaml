@@ -1,0 +1,13 @@
+robot_type: ffw_sh5_rev1
+# Explicitly approved reuse of the existing captured end pose.
+final_pose_file: ../ffw_lg2_mini_leader/bgf_waypoint1_endpose.json
+gesture:
+  # Dedicated normalized axis stream: left X,Y,button; right X,Y,button.
+  # Signs preserve the existing outward-gesture calibration. Verify on new boards.
+  left_axis_index: 1
+  right_axis_index: 4
+  left_axis_sign: 1.0
+  right_axis_sign: 1.0
+  gesture_threshold: 0.7
+  neutral_threshold: 0.2
+  gesture_hold_sec: 0.3

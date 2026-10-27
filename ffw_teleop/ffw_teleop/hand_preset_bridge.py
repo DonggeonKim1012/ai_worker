@@ -19,6 +19,28 @@ from std_srvs.srv import SetBool
 from ffw_teleop.hand_preset_model import PresetCatalog, normalize_trigger
 
 
+def a3_arm_command(hand, message):
+    """Validate the A3 7+1 contract and extract the arm by joint name."""
+    letter = {'left': 'l', 'right': 'r'}[hand]
+    arms = [f'arm_{letter}_joint{i}' for i in range(1, 8)]
+    expected = arms + [f'gripper_{letter}_joint1']
+    if (len(message.joint_names) != 8 or set(message.joint_names) != set(expected)
+            or len(message.points) != 1):
+        raise ValueError('A3 input must contain seven arm joints and one gripper in one point')
+    point = message.points[0]
+    for field in ('positions', 'velocities', 'accelerations', 'effort'):
+        values = getattr(point, field)
+        if ((field == 'positions' or values) and len(values) != 8
+                or not all(math.isfinite(value) for value in values)):
+            raise ValueError(f'Invalid A3 {field}')
+    indices = [message.joint_names.index(name) for name in arms]
+    target = JointTrajectoryPoint(time_from_start=point.time_from_start)
+    for field in ('positions', 'velocities', 'accelerations', 'effort'):
+        values = getattr(point, field)
+        setattr(target, field, [values[index] for index in indices] if values else [])
+    return JointTrajectory(header=message.header, joint_names=arms, points=[target])
+
+
 class HandPresetBridge(Node):
     def __init__(self, **kwargs):
         super().__init__('hand_preset_bridge', **kwargs)
@@ -33,8 +55,10 @@ class HandPresetBridge(Node):
         self.use_joint_states_trigger = self.declare_parameter(
             'use_joint_states_trigger', False).value
         self.control_profile = self.declare_parameter('control_profile', '').value
-        if self.control_profile not in ('', 'lg2_mini_sh5_recording'):
+        if self.control_profile not in ('', 'lg2_mini_sh5_recording', 'a3_sh5'):
             raise ValueError('Unsupported hand control profile')
+        if self.control_profile == 'a3_sh5' and self.use_joint_states_trigger:
+            raise ValueError('A3 SH5 requires the calibrated 8-joint trajectory input')
         self.raw_trigger_ranges = {}
         self.trigger_deadband = float(self.catalog.config['trigger_open_deadband_alpha'])
         if not math.isfinite(self.trigger_deadband) or not 0.0 <= self.trigger_deadband < 1.0:
@@ -71,6 +95,7 @@ class HandPresetBridge(Node):
         self.create_subscription(JointState, '/arm_hand/joint_states', self.on_measured, 10)
         self.create_timer(0.02, self.publish_endpose)
         self.pubs = {}
+        self.arm_pubs = {}
         self.effort_pubs = {}
         self.endpose_effort_ma = {}
         self.teleop_effort_ma = {}
@@ -99,8 +124,15 @@ class HandPresetBridge(Node):
             self.create_subscription(UInt8, f'/leader/{hand}_teleop_state',
                 partial(self.on_teleop, hand), 1)
             if not self.use_joint_states_trigger:
+                source = self.declare_parameter(f'{hand}_trajectory_topic',
+                    f'/leader/joint_trajectory_command_broadcaster_{hand}/joint_trajectory').value
+                if self.control_profile == 'a3_sh5':
+                    target = f'/leader/joint_trajectory_command_broadcaster_{hand}/joint_trajectory'
+                    if source == target:
+                        raise ValueError('A3 input must use a separate topic to prevent a command loop')
+                    self.arm_pubs[hand] = self.create_publisher(JointTrajectory, target, 1)
                 self.create_subscription(JointTrajectory,
-                    f'/leader/joint_trajectory_command_broadcaster_{hand}/joint_trajectory',
+                    source,
                     partial(self.on_trajectory, hand), 1)
         if self.use_joint_states_trigger:
             self.create_subscription(JointState, self.catalog.config['joint_states_topic'],
@@ -226,6 +258,18 @@ class HandPresetBridge(Node):
                 points=[JointTrajectoryPoint(positions=[calibrated])]))
 
     def on_trajectory(self, hand, message):
+        if self.control_profile == 'a3_sh5':
+            if self.paused or not self.ready:
+                return
+            try:
+                arm = a3_arm_command(hand, message)
+            except ValueError as error:
+                self.get_logger().warning(str(error), throttle_duration_sec=2.)
+                return
+            # A3 already implements hold, saved poses and gradual teleop entry.
+            # Preserve those arm targets, including IDLE hold, while removing
+            # the gripper joint that does not exist on the SH5 follower.
+            self.arm_pubs[hand].publish(arm)
         enabled, received = self.teleop[hand]
         if (self.paused or not self.ready or (self.require_teleop_heartbeat and
                 (not enabled or time.monotonic() - received > 0.5))
